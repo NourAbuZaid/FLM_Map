@@ -1,0 +1,135 @@
+html, body {
+    margin: 0;
+    padding: 0;
+  }
+
+
+h1 {
+
+    /* margin: 10pt; */
+    font-size: 30pt;
+    color: #dc5042;
+    font-family: Lato;
+    /* float: Left; */
+    /* position:fixed;
+    z-index: 2; */
+}
+
+.map {
+    position: absolute;
+    /* margin: -100pt; */
+    /* left: 100px; */
+    /* display: block; */
+    /* padding: 50px; */
+}
+
+.panel {
+    position:fixed;
+    width: 300px;
+    height: auto;
+    margin: 30px;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.95);
+    /* opacity: 0.5; */
+    z-index: 2;
+    border-radius: .5em;
+    box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
+}
+
+.selector {
+    display: block;
+    font-size: 16px;
+    font-family: Lato;
+    font-weight: 400;
+    color: #444;
+    line-height: 1.3;
+    padding: .5em;
+    width: 100%;
+    max-width: 100%; /* useful when width is set to anything other than 100% */
+    box-sizing: border-box;
+    margin: 5px;
+    border: 1px solid #aaa;
+    box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
+    border-radius: .5em;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #fff;
+
+}
+
+.selector-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 10px;
+    font-family: Lato;
+}
+
+.text {
+    font-size: 14px;
+    margin: 10px;
+    font-family: Lato;
+}
+
+.background {
+    fill: #191a1a;
+     /* #ddd; */
+}
+
+
+/* #map { 
+    border:1px solid #000; 
+} */
+
+.shape {
+    fill: white;
+    stroke: black;
+    stroke-width: 2pt;
+}
+
+.divider {
+    border-top: 1px Dotted black;
+    margin: 20px 0px 20px 10px;
+}
+
+.worldMap {
+    stroke:#191a1a;
+    stroke-width: 0.5px;
+    fill: #343332; 
+     /* #aaa; */
+}
+
+
+hp-content {
+    display: flex;
+    background-color: darkcyan;
+    width: 100vw;
+    height: 100vh;
+
+    justify-content: center;
+    align-items: center;
+}
+
+
+hp-presentation {
+    display: block;
+    background-color: lightblue;
+
+    width: 80vmin;
+    height: 80vmin;
+
+    border: .2em solid black;
+    border-radius: 1em;
+
+}
+
+hp-slide {
+    display: inline-block;
+    background-color: white;
+
+    width: 80%;
+    height: 80%;
+
+    margin: 10%;
+
+}
