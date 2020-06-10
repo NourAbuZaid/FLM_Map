@@ -1,26 +1,29 @@
 // Loading files
-const world_promise = d3.json("json/countries-50m.json");  // map
-const targets_promise = d3.json("json/2020-06-03_4.json"); // data
-
-// setup
-const width  = window.innerWidth;
-const height = window.innerHeight;
+// const targets_promise = d3.json("json/2020-06-03_4.json"); // data
+// const targets_promise = d3.json("json/country/BHR.json"); // data
+const targets_promise = d3.json("json/Id/COVID19___country-BHR_20200419_0713.json"); // data
 
 const colors = {  'red'    : '#dc5042', 
+                  'darkred': '#C0392B',
                   'blue1'  : '#3498DB',
                   'blue2'  : '#2874A6',
-                  'yellow' : '#FFC300', 
+                  'yellow' : '#F1C40F', 
                   'green'  : 'green', 
                   'purple' : 'purple',
+                  'steel1' : '#2874A6', 
+                  'purple1': '#8E44AD', 
+                  'orange' : '#E67E22',
+
+
                    }
 
-const colorByAttr = 'none'; // investigationId , locationType, targetId, givenTargetId
+const colorByAttr = 'investigationId'; // investigationId , locationType, targetId, givenTargetId
 
 let radiusByAttr = false; // doesn't work
-let scaleWhenZoom = true;
 
-const defaultRad = 10;
+const defaultRad = 5;
 const defaultStr = 1.5;
+const defaultOpac = 0.3;
 
 // let filter_TargetId = "9b4a3ab3-f137-4e2a-a900-89219eaf23b5";
 let filter_InvestigationId = null;
@@ -28,7 +31,19 @@ let filter_TargetId  = null;
 let filter_meetingDay = null;
 scaleFactor = 1;
 
-const meetingDays = [ "None", "2020-03-17", "2020-04-13" ];
+const meetingDays = [ "None",
+                    '2020-03-10', '2020-03-11',
+                    '2020-03-12', '2020-03-13',
+                    '2020-03-14', '2020-03-15',
+                    '2020-03-16', '2020-03-17',
+                    '2020-03-18', '2020-03-19',
+                    '2020-03-20', '2020-03-21',
+                    '2020-03-22', '2020-03-23',
+                    '2020-03-24', '2020-03-25',
+                    '2020-03-26', '2020-03-27',
+                    '2020-03-28', '2020-03-29',
+                    '2020-04-12', '2020-04-13'
+                    ];
 
 const locationTypesColors = {
                       'meetingPlace': colors.red, 
@@ -45,7 +60,8 @@ const invesIdColors = {
                        "COVID19___country-ARE_20200331_150758": colors.purple,
                        "COVID19___country-RWA_20200422_1052"  : colors.blue2,
                        "COVID19___country-RWA_20200417_0805"  : 'brown',
-                       "COVID19___country-RWA_20200422_1254"  : colors.yellow,
+                       "COVID19___country-RWA_20200422_1254"  : colors.orange,
+                       "COVID19___country-BHR_20200419_0713"  : colors.blue2
                       }
 
 const targetIdColors = {
@@ -56,37 +72,215 @@ const targetIdColors = {
 
 let renderData = []
 
-// d3
-const projection = d3.geoMercator()
-                        .scale(600)
-                        .translate([width / 2 - 300, height / 2 + 100]);
-                        // .center([-50, 0])
+/////////////////////////
+// -------- RENDERING MAP
+/////////////////////////
+// TO MAKE THE MAP APPEAR YOU MUST
+// ADD YOUR ACCESS TOKEN FROM
+// https://account.mapbox.com
+mapboxgl.accessToken = "pk.eyJ1Ijoibm91cmFidXphaWQiLCJhIjoiY2p5MnRpbDNiMGxiZzNlazIzbW5wMXYzbiJ9.hyfX_xW01YzBBWv2o-G1FA";
+//Setup mapbox-gl map
+var map = new mapboxgl.Map({
+  container: 'map',
+  style: "mapbox://styles/nourabuzaid/ckb6hjbdb2l1n1hp7dijmzp18/draft", 
+  center: [31.9466, 35.3027], // starting position [lng, lat]
+  zoom: 5 // starting zoom
+});
 
-const path = d3.geoPath().projection(projection);
+// map.scrollZoom.disable()                 
+// map.addControl(new mapboxgl.Navigation());
 
-const zoom = d3.zoom()
-                .scaleExtent([1, 100])
-                .translateExtent([[0,0], [width, height]])
-                .extent([[0, 0], [width, height]])
-                .on("zoom", zoomed);
+// Setup our svg layer that we can manipulate with d3 
+const container = map.getCanvasContainer()
+const svg = d3.select(container).append("svg")
 
-const svg = d3.select("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .call(zoom);
+const g_path   = svg.append('g');
+const g_lines1 = svg.append('g');
+const g_lines2 = svg.append('g');
+const g_dots1  = svg.append('g');
+const g_dots2  = svg.append('g');
+const g_dots3  = svg.append('g');
 
-const map = svg.select(".map_zoom");
-const g = svg.select(".world");
+targets_promise.then( data => {
+    // 'meetingPlace': colors.red, 
+    // 'regionPoint' : colors.blue2,
+    // 'lastLocation': colors.yellow,
+    // 'keyLocation' : colors.green 
+    const meetingPlaceData = data.filter(d=> d.locationType==='meetingPlace')
+    const lastLocationData = data.filter(d=> d.locationType==='lastLocation')
+    const keyLocationData = data.filter(d=> d.locationType==='keyLocation')
+    const regionPointData = data.filter(d=> d.locationType==='regionPoint')
 
-const backgroundMaps = svg.select(".maps");
-const plotData       = svg.select(".data");
-const targets_g = plotData.append('g').attr('class', 'targets' )
+
+    const lines1 = g_lines1.selectAll("line").data(lastLocationData).enter().append("line")
+    const lines2 = g_lines2.selectAll("line").data(lastLocationData).enter().append("line")
+    const dots1   = g_dots1.selectAll("circle").data(meetingPlaceData).enter().append("circle")
+    const dots2   = g_dots2.selectAll("circle").data(keyLocationData).enter().append("circle")
+    const dots3   = g_dots2.selectAll("circle").data(regionPointData).enter().append("circle")
+
+    /////////////////////////////////////////
+    // get targets who appear more than once in the data set
+    // every appearence is a location for now (later it can be more based on visits times)
+    
+
+    console.log('filtering data by target Id ...')
+    const allTargets = filterUniqueKeys( data, 'targetId');
+    // console.log('All targets', allTargets)
+    
+    function createTargetPathsDict(dataSet, allTargets){
+      // dict: target -> data points
+
+      console.log('initiating empty lists ...')
+      let targetsDict = {};
+      allTargets.forEach(id => targetsDict[id] = [] )
+
+      console.log('filling lists with data points...')
+      dataSet.forEach(d => targetsDict[d.targetId].push(d) ) // the whole object
+
+      // converting the whole d object to 
+
+      // dict: target -> Ordered Locations --- need a layer to sort the location by time
+      // sort a number of data points based on their time, 
+      // and therefore based on locationType (because it defines the dates Key names)
+
+      // returns 
+      return targetsDict
+    }
+
+    // a function that takes a list of coordinates and returns the path
+    // function getPath(lineData){ }
+    var lineFunction = d3.line()
+                    .x(function(d) { return project(d).x; })
+                    .y(function(d) { return project(d).y; })
+                    .curve(d3.curveLinear); 
+
+
+   
+
+    const targetsDict = createTargetPathsDict(data, allTargets);
+    console.log(targetsDict)
+    const pathData = allTargets;
+
+    const path = g_path.selectAll("path").data(pathData).enter().append("path")
+
+    path
+      .attr('class', 'targetPath')
+      .attr("stroke-width", defaultStr )
+      .attr("stroke", d => colorDataBy(d, colorByAttr))
+      .attr("fill", "none")
+
+
+    dots1
+      .attr("class", "target_cirlces")
+      .attr("r", defaultRad )
+      .attr("fill", d => colorDataBy(d, colorByAttr) )
+      .attr("fill-opacity", defaultOpac)
+      .attr("stroke", d => colorDataBy(d, colorByAttr))
+      .attr("stroke-width", defaultStr)
+      .on("click", (d) => {
+        updatePointDescription(d)
+        // descText1.text(getPointDescription(d));
+        } )
+
+
+    dots2
+      .attr("class", "target_cirlces")
+      .attr("r", defaultRad + 5 ) // keylocations
+      .attr("fill", 'red')
+      .attr("fill-opacity", defaultOpac)
+      .attr("stroke", 'red')
+      .attr("stroke-width", defaultStr)
+      .on("click", (d) => {
+        updatePointDescription(d)
+        // descText1.text(getPointDescription(d));
+        } )
+
+    dots3
+      .attr("class", "target_cirlces")
+      .attr("r", defaultRad - 2 )
+      .attr("fill", d => colorDataBy(d, colorByAttr) )
+      .attr("fill-opacity", defaultOpac)
+      .attr("stroke", d => colorDataBy(d, colorByAttr))
+      .attr("stroke-width", defaultStr)
+      .on("click", (d) => {
+        updatePointDescription(d)
+        // descText1.text(getPointDescription(d));
+        } )
+
+
+    lines1
+        .attr('class', 'lastLocation')
+        .attr("stroke-width", defaultStr + 1)
+        .attr("stroke", d => colorDataBy(d, colorByAttr))
+        .on("click", (d) => {
+          updatePointDescription(d)
+          // descText1.text(getPointDescription(d));
+          console.log(d.investigationId)} )
+
+    lines2
+    .attr('class', 'lastLocation')
+    .attr("stroke-width", defaultStr + 1)
+    .attr("stroke", d => colorDataBy(d, colorByAttr))
+    .on("click", (d) => {
+      updatePointDescription(d)
+      // descText1.text(getPointDescription(d));
+      console.log(d.investigationId)} )
+
+
+
+
+    function render() {
+
+      path
+      .attr("d", d => lineFunction(  targetsDict[d] ))
+
+
+
+      dots1
+        .attr('cx', d => project(d).x )
+        .attr('cy', d => project(d).y )
+
+      dots2
+        .attr('cx', d => project(d).x )
+        .attr('cy', d => project(d).y )
+
+      dots3
+        .attr('cx', d => project(d).x )
+        .attr('cy', d => project(d).y )
+
+      lines1
+        .attr('x1', d => project(d).x + 5)
+        .attr('y1', d => project(d).y + 5)
+        .attr('x2', d => project(d).x - 5)
+        .attr('y2', d => project(d).y - 5)
+
+      lines2
+        .attr('x1', d => project(d).x + 5)
+        .attr('y1', d => project(d).y - 5)
+        .attr('x2', d => project(d).x - 5)
+        .attr('y2', d => project(d).y + 5)
+
+    }
+
+    // re-render our visualization whenever the view changes -> how to make this faster?
+    map.on("viewreset", function() {
+      render()
+    })
+    map.on("move", function() {
+      render()
+    })
+
+    // render our initial visualization
+    render()
+})
 
 
 
 ////////////////////////////
 // -------- SIDE PANEL
 ////////////////////////////
+// ------------------------------------------------------------------------------------
+
 const filtersPanelDiv = d3.select(".selectors");
 
 filtersPanelDiv.append("hr").attr("class", "divider"); // divider
@@ -103,8 +297,11 @@ var meetingDay_selector = filtersPanelDiv.append("select").attr("class", "select
 
 filtersPanelDiv.append("hr").attr("class", "divider"); // divider
 
-const descText = filtersPanelDiv.append("p").attr("class", "text");
-descText.text("Description..");
+const descText1 = filtersPanelDiv.append("p").attr("class", "text");
+const descText2 = filtersPanelDiv.append("p").attr("class", "text");
+const descText3 = filtersPanelDiv.append("p").attr("class", "text");
+const descText4 = filtersPanelDiv.append("p").attr("class", "text");
+descText1.text("Description..");
 
 // Investigation ID Options
 invesID_selector.attr("id", "Investigation_id")
@@ -148,136 +345,11 @@ meetingDay_selector.on("change", function(){
     filter_meetingDay = this.value;
     updateMap();
 });
-
-////////////////////////////
-// -------- RENDERING MAP
-////////////////////////////
-// world map
-renderFile(world_promise, 'worldMap');
-// plot data
-targets_promise.then( (promiseResult) => {
-    console.log(promiseResult.length, ' Points');
-    renderData = promiseResult;
-    plotInitialPoints(promiseResult)
-} )
-
 ////////////////////////////
 // -------- FUNCTIONS   
 ////////////////////////////
-function renderFile(promise, className){
-    
-    promise.then(function(promiseResult){
-    // console.log(promiseResult);
-    const countries =  topojson.feature(promiseResult, promiseResult.objects.countries);
-    const g = backgroundMaps.append('g').attr('class', className )
-    g.selectAll("path")
-        .data(countries.features)
-        .enter().append("path")
-          .attr("d", path)
-          .attr('class', 'one'+className) // is this line necessary?
-  });
-}
-
-function updateMap(){
-
-  filteredData_investigationID   = renderData;
-  if (filter_InvestigationId !== null && filter_InvestigationId !== "None"){
-    filteredData_investigationID = renderData.filter(d => d.investigationId ===  filter_InvestigationId )
-  }
-  
-  filteredData_targetID = filteredData_investigationID
-  if (filter_TargetId !== null && filter_TargetId !== "None"){
-    filteredData_targetID = filteredData_investigationID.filter(d => d.targetId ===  filter_TargetId )
-  }
 
 
-  filteredData_meetingDay = filteredData_targetID
-  if (filter_meetingDay !== null && filter_meetingDay !== "None"){
-    filteredData_meetingDay = filteredData_targetID.filter(d => happenedOnThisDay(d) )
-  }
-
-  all_filtered = filteredData_meetingDay
-
-  console.log(renderData.length);
-  console.log(all_filtered.length);
-
-  // all_filtered.length>0 ? console.log(all_filtered) : null;
-  descText.text(all_filtered.length + " Results");
-  updatePlotPoint(all_filtered)
-
-}
-
-
-function plotInitialPoints(data){
-  
-  let circles   = targets_g.selectAll("circle");
-
-  circles
-      .data(data )
-      .enter().append("circle")
-      //   .attr("cx", d => path(d.coordinates.lat))
-      //   .attr("cy", d => d.coordinates.lon)
-        .attr('r',  defaultRad ) //d => calcRadius(d)
-        .attr('fill', d => colorDataBy(d, colorByAttr) ) 
-        .attr("fill-opacity", 0.3)
-        .attr("stroke", d => colorDataBy(d, colorByAttr))
-        .attr("stroke-width", defaultStr)
-        .attr("transform", d => "translate(" + projection([d.coordinates.lon, d.coordinates.lat]) + ")")
-        .attr('class', 'aCircle' )
-        .on("click", (d) =>  {
-          descText.text(getPointDescription(d));
-          console.log(d.investigationId)}  )
-
-      // console.log(circles)        
-      // circles.transition()
-      // .duration(1000).attr('fill', 'blue')
-      // .attr('fill-opacity', 0.2)
-
-}
-
-function updatePlotPoint(data){
-
-  let circles   = targets_g.selectAll("circle").data([]);
-
-  circles.exit().remove();//remove unneeded circles
-  
-  circles   = targets_g.selectAll("circle").data(data);
-
-  rad    = scaleWhenZoom?   defaultRad/ scaleFactor : defaultRad;
-  stroke = scaleWhenZoom?   defaultStr/ scaleFactor : defaultStr;
-  circles.enter().append("circle")
-    .attr('r',  rad ) //d => calcRadius(d)
-    .attr('fill', d => colorDataBy(d, colorByAttr) ) 
-    .attr("fill-opacity", 0.3)
-    .attr("stroke", d => colorDataBy(d, colorByAttr) )
-    .attr("stroke-width", stroke)
-    .attr("transform", d => "translate(" + projection([d.coordinates.lon, d.coordinates.lat]) + ")")
-    .attr('class', 'aCircle' )
-    .on("click", (d) => {
-      descText.text(getPointDescription(d));
-      console.log(d.investigationId)} )
-
-}
-
-function zoomed(){
-    // const g_zoom = svg.select(".map_zoom"); 
-    map.attr("transform", d3.event.transform)
-
-    if(scaleWhenZoom){
-      scaleFactor = d3.event.transform.k;
-      const worldMap = svg.select('.oneworldMap');
-      
-      worldMap.attr('stroke', 'red')
-
-      const circlesSelection = svg.selectAll('.aCircle');
-      circlesSelection.attr('r', d => defaultRad / d3.event.transform.k)
-                      .attr("stroke-width", defaultStr / d3.event.transform.k)
-      
-    }
-
-
-
-  }  
 
 function colorDataBy(d, attr){
   switch(attr){
@@ -343,4 +415,54 @@ function happenedOnThisDay(datum){
   }else{
     return false;
   }
+}
+
+function getPointDescription(d){
+  // return (`A point with target ID ${d.targetId} \n
+  //          and Investigation ID ${d.investigationId}.` )
+
+  return `
+        <div>
+          <span>Some HTML here</span>
+        </div>
+        `
+}
+
+function updatePointDescription(d){
+  console.log(d.locationType)
+  descText1.text(`Target ID ${d.targetId}`)
+  descText2.text(`Investigation ID ${d.investigationId}`)
+  descText3.text(`Location Type ${d.locationType}`)
+  descText4.text(`Visits ${JSON.stringify(d.meetingTimes)}`)
+  //          `and Investigation ID ${d.investigationId}.` 
+}
+
+/////////////////////////////////
+// not used
+function projectPoint(lon, lat) {
+    var point = map.project(new mapboxgl.LngLat(lon, lat));
+    this.stream.point(point.x, point.y);
+}
+
+
+function project(d) {
+  return map.project(getLL(d));
+}
+function getLL(d) {
+  return new mapboxgl.LngLat(+d.coordinates.lon, +d.coordinates.lat)
+}
+
+function filterUniqueKeys(data, keyName ){
+  let list = data.map(d => d[keyName])
+  let unique = getUniqueItems(list);
+  return unique;
+}
+
+function getUniqueItems(list){
+  // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
+  function onlyUnique(value, index, self) { 
+      return self.indexOf(value) === index;
+  }
+  let unique = list.filter( onlyUnique ); 
+  return unique;
 }
