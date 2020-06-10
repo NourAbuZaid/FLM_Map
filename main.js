@@ -1,7 +1,7 @@
 // Loading files
 // const targets_promise = d3.json("json/2020-06-03_4.json"); // data
 // const targets_promise = d3.json("json/country/BHR.json"); // data
-const targets_promise = d3.json("json/Id/COVID19___country-BHR_20200419_0713.json"); // data
+const targets_promise = d3.json("json/Id/COVID19___country_IL_20200325_163741.json"); // data
 
 const colors = {  'red'    : '#dc5042', 
                   'darkred': '#C0392B',
@@ -21,8 +21,8 @@ const colorByAttr = 'investigationId'; // investigationId , locationType, target
 
 let radiusByAttr = false; // doesn't work
 
-const defaultRad = 5;
-const defaultStr = 1.5;
+const defaultRad = 5 ;
+const defaultStr = 2;
 const defaultOpac = 0.3;
 
 // let filter_TargetId = "9b4a3ab3-f137-4e2a-a900-89219eaf23b5";
@@ -108,12 +108,12 @@ targets_promise.then( data => {
     // 'keyLocation' : colors.green 
     const meetingPlaceData = data.filter(d=> d.locationType==='meetingPlace')
     const lastLocationData = data.filter(d=> d.locationType==='lastLocation')
-    const keyLocationData = data.filter(d=> d.locationType==='keyLocation')
-    const regionPointData = data.filter(d=> d.locationType==='regionPoint')
+    const keyLocationData  = data.filter(d=> d.locationType==='keyLocation')
+    const regionPointData  = data.filter(d=> d.locationType==='regionPoint')
 
 
-    const lines1 = g_lines1.selectAll("line").data(lastLocationData).enter().append("line")
-    const lines2 = g_lines2.selectAll("line").data(lastLocationData).enter().append("line")
+    const lines1  = g_lines1.selectAll("line").data(lastLocationData).enter().append("line")
+    const lines2  = g_lines2.selectAll("line").data(lastLocationData).enter().append("line")
     const dots1   = g_dots1.selectAll("circle").data(meetingPlaceData).enter().append("circle")
     const dots2   = g_dots2.selectAll("circle").data(keyLocationData).enter().append("circle")
     const dots3   = g_dots2.selectAll("circle").data(regionPointData).enter().append("circle")
@@ -125,6 +125,7 @@ targets_promise.then( data => {
 
     console.log('filtering data by target Id ...')
     const allTargets = filterUniqueKeys( data, 'targetId');
+    // targID_selector.data(allTargets); -> this should fill targetSelection List
     // console.log('All targets', allTargets)
     
     function createTargetPathsDict(dataSet, allTargets){
@@ -154,29 +155,34 @@ targets_promise.then( data => {
                     .y(function(d) { return project(d).y; })
                     .curve(d3.curveLinear); 
 
-
-   
-
     const targetsDict = createTargetPathsDict(data, allTargets);
-    console.log(targetsDict)
+    console.log(allTargets.length)
     const pathData = allTargets;
+
+    function colorByTargetId(id){
+      const index = allTargets.indexOf(id);
+      const t = index/allTargets.length;
+      return d3.interpolateSpectral(t)  //interpolatePiYG , interpolateSpectral, interpolatePuOr
+    }
 
     const path = g_path.selectAll("path").data(pathData).enter().append("path")
 
     path
       .attr('class', 'targetPath')
-      .attr("stroke-width", defaultStr )
-      .attr("stroke", d => colorDataBy(d, colorByAttr))
+      .attr("stroke-width", defaultStr -1 )
+      .attr("stroke", d =>  colorByTargetId(d) )
+      .attr('stroke-opacity', 0.3 )
       .attr("fill", "none")
 
 
     dots1
       .attr("class", "target_cirlces")
       .attr("r", defaultRad )
-      .attr("fill", d => colorDataBy(d, colorByAttr) )
+      .attr("fill", d => colorByTargetId(d.targetId) )
       .attr("fill-opacity", defaultOpac)
-      .attr("stroke", d => colorDataBy(d, colorByAttr))
+      .attr("stroke", d => colorByTargetId(d.targetId) )
       .attr("stroke-width", defaultStr)
+      .attr('stroke-opacity', 0.5 )
       .on("click", (d) => {
         updatePointDescription(d)
         // descText1.text(getPointDescription(d));
@@ -185,11 +191,12 @@ targets_promise.then( data => {
 
     dots2
       .attr("class", "target_cirlces")
-      .attr("r", defaultRad + 5 ) // keylocations
-      .attr("fill", 'red')
+      .attr("r", defaultRad + 2 ) // keylocations
+      .attr("fill", d =>  colorByTargetId(d.targetId) )
       .attr("fill-opacity", defaultOpac)
-      .attr("stroke", 'red')
+      .attr("stroke", d =>  colorByTargetId(d.targetId) )
       .attr("stroke-width", defaultStr)
+      .attr('stroke-opacity', 0.5 )
       .on("click", (d) => {
         updatePointDescription(d)
         // descText1.text(getPointDescription(d));
@@ -197,11 +204,12 @@ targets_promise.then( data => {
 
     dots3
       .attr("class", "target_cirlces")
-      .attr("r", defaultRad - 2 )
-      .attr("fill", d => colorDataBy(d, colorByAttr) )
+      .attr("r", defaultRad - 1 ) // regionPoint
+      .attr("fill", d => colorByTargetId(d.targetId) )
       .attr("fill-opacity", defaultOpac)
-      .attr("stroke", d => colorDataBy(d, colorByAttr))
+      .attr("stroke", d =>  colorByTargetId(d.targetId) )
       .attr("stroke-width", defaultStr)
+      .attr('stroke-opacity', 0.5 )
       .on("click", (d) => {
         updatePointDescription(d)
         // descText1.text(getPointDescription(d));
@@ -210,8 +218,8 @@ targets_promise.then( data => {
 
     lines1
         .attr('class', 'lastLocation')
-        .attr("stroke-width", defaultStr + 1)
-        .attr("stroke", d => colorDataBy(d, colorByAttr))
+        .attr("stroke-width", defaultStr + 2)
+        .attr("stroke", d =>  colorByTargetId(d.targetId))
         .on("click", (d) => {
           updatePointDescription(d)
           // descText1.text(getPointDescription(d));
@@ -219,8 +227,8 @@ targets_promise.then( data => {
 
     lines2
     .attr('class', 'lastLocation')
-    .attr("stroke-width", defaultStr + 1)
-    .attr("stroke", d => colorDataBy(d, colorByAttr))
+    .attr("stroke-width", defaultStr + 2)
+    .attr("stroke", d => colorByTargetId(d.targetId) )
     .on("click", (d) => {
       updatePointDescription(d)
       // descText1.text(getPointDescription(d));
@@ -230,6 +238,8 @@ targets_promise.then( data => {
 
 
     function render() {
+
+      const tickLength = 10;
 
       path
       .attr("d", d => lineFunction(  targetsDict[d] ))
@@ -249,16 +259,16 @@ targets_promise.then( data => {
         .attr('cy', d => project(d).y )
 
       lines1
-        .attr('x1', d => project(d).x + 5)
-        .attr('y1', d => project(d).y + 5)
-        .attr('x2', d => project(d).x - 5)
-        .attr('y2', d => project(d).y - 5)
+        .attr('x1', d => project(d).x + tickLength)
+        .attr('y1', d => project(d).y + tickLength)
+        .attr('x2', d => project(d).x - tickLength)
+        .attr('y2', d => project(d).y - tickLength)
 
       lines2
-        .attr('x1', d => project(d).x + 5)
-        .attr('y1', d => project(d).y - 5)
-        .attr('x2', d => project(d).x - 5)
-        .attr('y2', d => project(d).y + 5)
+        .attr('x1', d => project(d).x + tickLength)
+        .attr('y1', d => project(d).y - tickLength)
+        .attr('x2', d => project(d).x - tickLength)
+        .attr('y2', d => project(d).y + tickLength)
 
     }
 
@@ -429,7 +439,7 @@ function getPointDescription(d){
 }
 
 function updatePointDescription(d){
-  console.log(d.locationType)
+  console.log(d)
   descText1.text(`Target ID ${d.targetId}`)
   descText2.text(`Investigation ID ${d.investigationId}`)
   descText3.text(`Location Type ${d.locationType}`)
