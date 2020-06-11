@@ -1,7 +1,7 @@
 // Loading files
 // const targets_promise = d3.json("json/2020-06-03_4.json"); // data
 // const targets_promise = d3.json("json/country/BHR.json"); // data
-const targets_promise = d3.json("json/Id/COVID19___country_IL_20200325_163741.json"); // data
+const targets_promise = d3.json("json/Id/COVID19___country_IL_20200326_142406.json"); // data
 
 const colors = {  'red'    : '#dc5042', 
                   'darkred': '#C0392B',
@@ -87,46 +87,65 @@ var map = new mapboxgl.Map({
   zoom: 5 // starting zoom
 });
 
-// map.scrollZoom.disable()                 
-// map.addControl(new mapboxgl.Navigation());
+// map.scrollZoom.disable()
+// map.addControl(new mapboxgl.Navigation()); -> doesn't work 
 
+// to handle retina display
+const res = window.devicePixelRatio
+const calcWidth  = () => res ? window.innerWidth  * res : window.innerWidth;
+const calcHeight = () => res ? window.innerHeight * res : window.innerHeight;
+
+
+var width  = calcWidth() 
+var height = calcHeight() 
+
+console.log(width, height)
+
+var w = document.documentElement.clientWidth;
+var h = document.documentElement.clientHeight;
+
+console.log( w, h )
 // Setup our svg layer that we can manipulate with d3 
 const container = map.getCanvasContainer()
-const svg = d3.select(container).append("svg")
 
-const g_path   = svg.append('g');
-const g_lines1 = svg.append('g');
-const g_lines2 = svg.append('g');
-const g_dots1  = svg.append('g');
-const g_dots2  = svg.append('g');
-const g_dots3  = svg.append('g');
+let canvas = d3.select(container).append("canvas").node();
+canvas.width  = width;
+canvas.height = height;
+let context    = canvas.getContext('2d');
+
+
 
 targets_promise.then( data => {
     // 'meetingPlace': colors.red, 
     // 'regionPoint' : colors.blue2,
     // 'lastLocation': colors.yellow,
     // 'keyLocation' : colors.green 
-    const meetingPlaceData = data.filter(d=> d.locationType==='meetingPlace')
-    const lastLocationData = data.filter(d=> d.locationType==='lastLocation')
-    const keyLocationData  = data.filter(d=> d.locationType==='keyLocation')
-    const regionPointData  = data.filter(d=> d.locationType==='regionPoint')
+    const meetingPlaceData = data.filter(d=> d.locationType === 'meetingPlace')
+    const lastLocationData = data.filter(d=> d.locationType === 'lastLocation')
+    const keyLocationData  = data.filter(d=> d.locationType === 'keyLocation')
+    const regionPointData  = data.filter(d=> d.locationType === 'regionPoint')
 
+    console.log("Number of regionPoint :",  regionPointData.length )
+    console.log("Number of meetingPlace :", meetingPlaceData.length )
+    console.log("Number of keyLocation :",  keyLocationData.length )
+    console.log("Number of lastLocation :", lastLocationData.length )
 
-    const lines1  = g_lines1.selectAll("line").data(lastLocationData).enter().append("line")
-    const lines2  = g_lines2.selectAll("line").data(lastLocationData).enter().append("line")
-    const dots1   = g_dots1.selectAll("circle").data(meetingPlaceData).enter().append("circle")
-    const dots2   = g_dots2.selectAll("circle").data(keyLocationData).enter().append("circle")
-    const dots3   = g_dots2.selectAll("circle").data(regionPointData).enter().append("circle")
-
-    /////////////////////////////////////////
-    // get targets who appear more than once in the data set
-    // every appearence is a location for now (later it can be more based on visits times)
     
 
     console.log('filtering data by target Id ...')
     const allTargets = filterUniqueKeys( data, 'targetId');
-    // targID_selector.data(allTargets); -> this should fill targetSelection List
-    // console.log('All targets', allTargets)
+    console.log('Number of targets: ', allTargets.length );
+
+    // === Bind data to custom elements === //
+    let customBase = document.createElement('custom');
+		let custom = d3.select(customBase); // this is our svg replacement
+
+
+    /////////////////////////////////////////
+    // get targets who appear more than once in the data set
+    // every appearence is a location for now (later it can be more based on visits times)
+  
+
     
     function createTargetPathsDict(dataSet, allTargets){
       // dict: target -> data points
@@ -137,27 +156,20 @@ targets_promise.then( data => {
 
       console.log('filling lists with data points...')
       dataSet.forEach(d => targetsDict[d.targetId].push(d) ) // the whole object
-
-      // converting the whole d object to 
-
-      // dict: target -> Ordered Locations --- need a layer to sort the location by time
-      // sort a number of data points based on their time, 
-      // and therefore based on locationType (because it defines the dates Key names)
-
-      // returns 
       return targetsDict
     }
 
     // a function that takes a list of coordinates and returns the path
     // function getPath(lineData){ }
-    var lineFunction = d3.line()
-                    .x(function(d) { return project(d).x; })
-                    .y(function(d) { return project(d).y; })
-                    .curve(d3.curveLinear); 
+    var line = d3.line()
+                    .x( d => project(d).x )
+                    .y( d => project(d).y )
+                    .curve(d3.curveLinear)
+                    .context(context); 
 
     const targetsDict = createTargetPathsDict(data, allTargets);
-    console.log(allTargets.length)
-    const pathData = allTargets;
+    // console.log(allTargets.length)
+    // const pathData = allTargets;
 
     function colorByTargetId(id){
       const index = allTargets.indexOf(id);
@@ -165,110 +177,84 @@ targets_promise.then( data => {
       return d3.interpolateSpectral(t)  //interpolatePiYG , interpolateSpectral, interpolatePuOr
     }
 
-    const path = g_path.selectAll("path").data(pathData).enter().append("path")
-
-    path
-      .attr('class', 'targetPath')
-      .attr("stroke-width", defaultStr -1 )
-      .attr("stroke", d =>  colorByTargetId(d) )
-      .attr('stroke-opacity', 0.3 )
-      .attr("fill", "none")
-
-
-    dots1
-      .attr("class", "target_cirlces")
-      .attr("r", defaultRad )
-      .attr("fill", d => colorByTargetId(d.targetId) )
-      .attr("fill-opacity", defaultOpac)
-      .attr("stroke", d => colorByTargetId(d.targetId) )
-      .attr("stroke-width", defaultStr)
-      .attr('stroke-opacity', 0.5 )
-      .on("click", (d) => {
-        updatePointDescription(d)
-        // descText1.text(getPointDescription(d));
-        } )
-
-
-    dots2
-      .attr("class", "target_cirlces")
-      .attr("r", defaultRad + 2 ) // keylocations
-      .attr("fill", d =>  colorByTargetId(d.targetId) )
-      .attr("fill-opacity", defaultOpac)
-      .attr("stroke", d =>  colorByTargetId(d.targetId) )
-      .attr("stroke-width", defaultStr)
-      .attr('stroke-opacity', 0.5 )
-      .on("click", (d) => {
-        updatePointDescription(d)
-        // descText1.text(getPointDescription(d));
-        } )
-
-    dots3
-      .attr("class", "target_cirlces")
-      .attr("r", defaultRad - 1 ) // regionPoint
-      .attr("fill", d => colorByTargetId(d.targetId) )
-      .attr("fill-opacity", defaultOpac)
-      .attr("stroke", d =>  colorByTargetId(d.targetId) )
-      .attr("stroke-width", defaultStr)
-      .attr('stroke-opacity', 0.5 )
-      .on("click", (d) => {
-        updatePointDescription(d)
-        // descText1.text(getPointDescription(d));
-        } )
-
-
-    lines1
-        .attr('class', 'lastLocation')
-        .attr("stroke-width", defaultStr + 2)
-        .attr("stroke", d =>  colorByTargetId(d.targetId))
-        .on("click", (d) => {
-          updatePointDescription(d)
-          // descText1.text(getPointDescription(d));
-          console.log(d.investigationId)} )
-
-    lines2
-    .attr('class', 'lastLocation')
-    .attr("stroke-width", defaultStr + 2)
-    .attr("stroke", d => colorByTargetId(d.targetId) )
-    .on("click", (d) => {
-      updatePointDescription(d)
-      // descText1.text(getPointDescription(d));
-      console.log(d.investigationId)} )
-
-
-
-
     function render() {
 
-      const tickLength = 10;
+      context.clearRect(0, 0, width, height)
+      
+      // lines
+      context.lineWidth = 0.5 * res;
+      allTargets.forEach( id => {
+        context.strokeStyle = colorByTargetId(id);
+        context.beginPath();
+        line(targetsDict[id]);
+        context.stroke();
+      })
+      
 
-      path
-      .attr("d", d => lineFunction(  targetsDict[d] ))
+      // nodes - meetingPlaceData
+      context.lineWidth    = 3 * res ;
+      // context.strokeStyle = "#fff"
+      meetingPlaceData.forEach( d => {
+        const color = colorByTargetId(d.targetId);
+        context.strokeStyle = color;
+        // const colorTransparent = color.replace(')', ', 0.30)').replace('rgb', 'rgba');        
+        // context.fillStyle = colorTransparent;
+        var p = project(d)
+        context.beginPath()
+        context.arc( p.x, p.y, 10 * res, 0, Math.PI*2)
+        // context.fill()
+        context.stroke()
+      })
 
+      // nodes - regionPoint
+      context.lineWidth   = 1 * res ;
+      context.strokeStyle = "#fff";
+      const s = 10 * res ; // rect side 
+      regionPointData.forEach( d => {
+        const color = colorByTargetId(d.targetId);       
+        context.fillStyle = color;
+        var p = project(d)
+        context.beginPath()
+        context.rect( p.x - s/2 ,  p.y - s/2 , s, s);
+        // context.arc( p.x * res, p.y * res, 6 * res, 0, Math.PI*2)
+        context.fill()
+        // context.stroke()
+      })
 
+      // nodes - lastLocation
+      context.lineWidth    = 5 * res ;
+      const r = 8 * res; // tick radius
+      lastLocationData.forEach( d => {
+        const color = colorByTargetId(d.targetId);
+        // context.strokeStyle = color;
+        // const colorTransparent = color.replace(')', ', 0.55)').replace('rgb', 'rgba');        
+        context.strokeStyle = color;
+        var p = project(d)
+        context.beginPath()
+        context.moveTo(p.x-r, p.y-r)
+        context.lineTo(p.x+r, p.y+r)
+        context.moveTo(p.x-r, p.y+r)
+        context.lineTo(p.x+r, p.y-r)
+        // context.arc( p.x * res, p.y * res, 6 * res, 0, Math.PI*2)
+        // context.fill()
+        context.stroke()
+      })
 
-      dots1
-        .attr('cx', d => project(d).x )
-        .attr('cy', d => project(d).y )
+      // nodes - keyLocation
+      context.lineWidth    = 1 * res ;
+      context.strokeStyle = "#fff"
+      keyLocationData.forEach( d => {
+        const color = colorByTargetId(d.targetId);
+        // context.strokeStyle = color;
+        // const colorTransparent = color.replace(')', ', 0.55)').replace('rgb', 'rgba');        
+        context.fillStyle = color;
+        var p = project(d)
+        context.beginPath()
+        context.arc( p.x , p.y, 5 * res, 0, Math.PI*2)
+        context.fill()
+        // context.stroke()
+      })
 
-      dots2
-        .attr('cx', d => project(d).x )
-        .attr('cy', d => project(d).y )
-
-      dots3
-        .attr('cx', d => project(d).x )
-        .attr('cy', d => project(d).y )
-
-      lines1
-        .attr('x1', d => project(d).x + tickLength)
-        .attr('y1', d => project(d).y + tickLength)
-        .attr('x2', d => project(d).x - tickLength)
-        .attr('y2', d => project(d).y - tickLength)
-
-      lines2
-        .attr('x1', d => project(d).x + tickLength)
-        .attr('y1', d => project(d).y - tickLength)
-        .attr('x2', d => project(d).x - tickLength)
-        .attr('y2', d => project(d).y + tickLength)
 
     }
 
@@ -282,6 +268,15 @@ targets_promise.then( data => {
 
     // render our initial visualization
     render()
+
+    window.addEventListener("resize", ()=> { 
+      width  = calcWidth() ; 
+      height = calcHeight();
+      canvas.width  = width;
+      canvas.height = height;
+      render()
+      // console.log(width, height )
+    }); // fix: points dissapear on resize
 })
 
 
@@ -456,10 +451,11 @@ function projectPoint(lon, lat) {
 
 
 function project(d) {
-  return map.project(getLL(d));
+  p =  map.project(getLL(d));
+  return { 'x': p.x * res, 'y':p.y * res };
 }
 function getLL(d) {
-  return new mapboxgl.LngLat(+d.coordinates.lon, +d.coordinates.lat)
+  return  new mapboxgl.LngLat(+d.coordinates.lon, +d.coordinates.lat)
 }
 
 function filterUniqueKeys(data, keyName ){
