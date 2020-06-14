@@ -1,260 +1,210 @@
 // Loading files
 // const targets_promise = d3.json("json/2020-06-03_4.json"); // data
 // const targets_promise = d3.json("json/country/BHR.json"); // data
-const targets_promise = d3.json("json/Id/COVID19___country_IL_20200326_142406.json"); // data
+// const targets_promise = d3.json("json/Id/COVID19___country-SAU_20200331_145940.json"); // data
+const targets_promise = d3.json("json/Id/COVID19___country-BHR_20200419_0713.json"); // data
 
-const colors = {  'red'    : '#dc5042', 
-                  'darkred': '#C0392B',
-                  'blue1'  : '#3498DB',
-                  'blue2'  : '#2874A6',
-                  'yellow' : '#F1C40F', 
-                  'green'  : 'green', 
-                  'purple' : 'purple',
-                  'steel1' : '#2874A6', 
-                  'purple1': '#8E44AD', 
-                  'orange' : '#E67E22',
-
-
-                   }
-
-const colorByAttr = 'investigationId'; // investigationId , locationType, targetId, givenTargetId
-
-let radiusByAttr = false; // doesn't work
-
-const defaultRad = 5 ;
-const defaultStr = 2;
-const defaultOpac = 0.3;
-
-// let filter_TargetId = "9b4a3ab3-f137-4e2a-a900-89219eaf23b5";
-let filter_InvestigationId = null;
-let filter_TargetId  = null;
-let filter_meetingDay = null;
-scaleFactor = 1;
-
-const meetingDays = [ "None",
-                    '2020-03-10', '2020-03-11',
-                    '2020-03-12', '2020-03-13',
-                    '2020-03-14', '2020-03-15',
-                    '2020-03-16', '2020-03-17',
-                    '2020-03-18', '2020-03-19',
-                    '2020-03-20', '2020-03-21',
-                    '2020-03-22', '2020-03-23',
-                    '2020-03-24', '2020-03-25',
-                    '2020-03-26', '2020-03-27',
-                    '2020-03-28', '2020-03-29',
-                    '2020-04-12', '2020-04-13'
-                    ];
-
-const locationTypesColors = {
-                      'meetingPlace': colors.red, 
-                      'regionPoint' : colors.blue2,
-                      'lastLocation': colors.yellow,
-                      'keyLocation' : colors.green 
-                     }
-
-const invesIdColors = {
-                       "None" : null,
-                       "COVID19___country_IL_20200326_142406" : colors.red, 
-                       "COVID19___country_IL_20200325_163741" : colors.yellow,
-                       "COVID19___country-SAU_20200331_145940": colors.green,
-                       "COVID19___country-ARE_20200331_150758": colors.purple,
-                       "COVID19___country-RWA_20200422_1052"  : colors.blue2,
-                       "COVID19___country-RWA_20200417_0805"  : 'brown',
-                       "COVID19___country-RWA_20200422_1254"  : colors.orange,
-                       "COVID19___country-BHR_20200419_0713"  : colors.blue2
-                      }
-
-const targetIdColors = {
-                      "None" : null,
-                      "7eadd384-e4d3-4950-a620-2dccfd6c88b2" : colors.red,
-                      "9b4a3ab3-f137-4e2a-a900-89219eaf23b5" : colors.blue1
-};
+// "COVID19___country_IL_20200326_142406"    
+// "COVID19___country_IL_20200325_163741"       
+// "COVID19___country-SAU_20200331_145940"      
+// "COVID19___country-ARE_20200331_150758"      
+// "COVID19___country-RWA_20200422_1052"        
+// "COVID19___country-RWA_20200417_0805"       
+// "COVID19___country-RWA_20200422_1254"       
+// "COVID19___country-BHR_20200419_0713"       
 
 let renderData = []
 
-/////////////////////////
-// -------- RENDERING MAP
-/////////////////////////
-// TO MAKE THE MAP APPEAR YOU MUST
-// ADD YOUR ACCESS TOKEN FROM
-// https://account.mapbox.com
-mapboxgl.accessToken = "pk.eyJ1Ijoibm91cmFidXphaWQiLCJhIjoiY2p5MnRpbDNiMGxiZzNlazIzbW5wMXYzbiJ9.hyfX_xW01YzBBWv2o-G1FA";
-//Setup mapbox-gl map
-var map = new mapboxgl.Map({
-  container: 'map',
-  style: "mapbox://styles/nourabuzaid/ckb6hjbdb2l1n1hp7dijmzp18/draft", 
-  center: [31.9466, 35.3027], // starting position [lng, lat]
-  zoom: 5 // starting zoom
-});
-
-// map.scrollZoom.disable()
-// map.addControl(new mapboxgl.Navigation()); -> doesn't work 
-
-// to handle retina display
-const res = window.devicePixelRatio
-const calcWidth  = () => res ? window.innerWidth  * res : window.innerWidth;
-const calcHeight = () => res ? window.innerHeight * res : window.innerHeight;
-
-
-var width  = calcWidth() 
-var height = calcHeight() 
-
-console.log(width, height)
-
-var w = document.documentElement.clientWidth;
-var h = document.documentElement.clientHeight;
-
-console.log( w, h )
-// Setup our svg layer that we can manipulate with d3 
-const container = map.getCanvasContainer()
-
-let canvas = d3.select(container).append("canvas").node();
-canvas.width  = width;
-canvas.height = height;
-let context    = canvas.getContext('2d');
-
-
-
 targets_promise.then( data => {
-    // 'meetingPlace': colors.red, 
-    // 'regionPoint' : colors.blue2,
-    // 'lastLocation': colors.yellow,
-    // 'keyLocation' : colors.green 
-    const meetingPlaceData = data.filter(d=> d.locationType === 'meetingPlace')
-    const lastLocationData = data.filter(d=> d.locationType === 'lastLocation')
-    const keyLocationData  = data.filter(d=> d.locationType === 'keyLocation')
-    const regionPointData  = data.filter(d=> d.locationType === 'regionPoint')
+
+    // initial filtering of the data
+    // get: allTargets, allLocations, allDates
+    console.log('filtering data by target Id ...')
+    const allTargets   = filterUniqueKeys( data, 'targetId'); // this is a list of Ids, not d objects
+    // const allLocations = filterUniqueKeys( data, 'coordinates'); // this is a list of Ids, not d objects
+    const allLocationsStrings   = data.map(d=> getStringLocationFromD(d))
+    const uniqueLocationsString = getUniqueItems(allLocationsStrings)
+
+    
+    const locationsDict = {}
+    uniqueLocationsString.forEach(loc => locationsDict[loc] = [] )
+
+    // FILTER BY DAY !! 
+
+    // actualRenderData !! 
+
+    // empty collectors
+    const locationTypeDict = {'meetingPlace':[], 'lastLocation':[], 'keyLocation':[], 'regionPoint':[], }
+    let targetsDict = {};
+    allTargets.forEach(id => targetsDict[id] = [] )
+
+    // loop through data
+    data.forEach(d =>{
+      // by locationType
+      locationTypeDict[d.locationType].push(d);
+      targetsDict[d.targetId].push(d)
+      locationsDict[getStringLocationFromD(d)].push(d)
+    })
+    
+    console.log(locationsDict)
+
+    // things we can get from locationsDict
+    // 1. all locations, simple
+    // 2. all locations, rad = numberOfTargets (doesn't matter if targets repeated) [most visited effect]
+    // 3. Mutual  locations, rad = numberOf[UNIQUE]Targets (only unique targets) [mutual ones effect]
+    // 4. MEETing locations, when number of unique targets is more than one 
+
+    function locationsByAllVisits(locationsDict){
+      // return a list of objects {coordinates:{}, visits: 5}
+      const result = []
+      Object.keys(locationsDict).forEach(loc=>{
+        result.push({ 'coordinates': getLocationFromString(loc), 'visits': locationsDict[loc].length})
+      })
+      return result
+    }
+
+    function locationsByUniqueVisits(locationsDict){
+      // return a list of objects {coordinates:{}, visits: 5}
+      const result = []
+      
+      Object.keys(locationsDict).forEach(loc=>{
+        const allDees = locationsDict[loc];
+        const uniqueList = []
+        const unique = allDees.filter( d => !uniqueList.includes(d.targetId)? uniqueList.push(d.targetId) : null )
+        // console.log(allDees)
+        // console.log(uniqueList)
+        result.push({ 'coordinates': getLocationFromString(loc), 'visits': uniqueList.length})
+      })
+      return result
+    }
+
+    function locationsByPotentialMeetings(locationsDict){
+      // return a list of objects {coordinates:{}, visits: 5}
+      const result = []
+      
+      // locationsDict locationString - [list of Dees]
+      Object.keys(locationsDict).forEach(loc=>{
+        const allDees = locationsDict[loc];
+        const uniqueList = []
+        const unique = allDees.filter( d => !uniqueList.includes(d.targetId)? uniqueList.push(d.targetId) : null )
+
+        // console.log(allDees)
+        // console.log(uniqueList)
+        // now fot this unique list we want to make a dictionary of days
+        const DaysPerTargetId = {}
+        // create empty lists
+        if(uniqueList.length > 1){
+          uniqueList.forEach( id => DaysPerTargetId[id] = [])
+          allDees.forEach(d => {
+            DaysPerTargetId[d.targetId] = getUniqueItems(getDatesListByTarget(d).map( date => date.split("T")[0]) )
+          })
+
+          // assuming we only have two items in the unique list 
+          const array1 = DaysPerTargetId[uniqueList[0]]
+          const array2 = DaysPerTargetId[uniqueList[1]]
+          const meetings = array1.filter(value => array2.includes(value))
+
+
+          if(meetings.length > 0){
+            result.push({ 'coordinates': getLocationFromString(loc), 'visits': uniqueList.length})
+          }        
+        }
+      })
+
+      return result
+    }
+
+    const allVisits    = locationsByAllVisits(locationsDict)
+    const uniqueVisits = locationsByUniqueVisits(locationsDict)
+    const meeting = locationsByPotentialMeetings(locationsDict);
+
+
+    // filtering throught data based on input
+    const meetingPlaceData = locationTypeDict['meetingPlace']
+    const lastLocationData = locationTypeDict['lastLocation'] 
+    const keyLocationData  = locationTypeDict['keyLocation' ]
+    const regionPointData  = locationTypeDict['regionPoint' ] 
 
     console.log("Number of regionPoint :",  regionPointData.length )
     console.log("Number of meetingPlace :", meetingPlaceData.length )
     console.log("Number of keyLocation :",  keyLocationData.length )
     console.log("Number of lastLocation :", lastLocationData.length )
 
-    
 
-    console.log('filtering data by target Id ...')
-    const allTargets = filterUniqueKeys( data, 'targetId');
-    console.log('Number of targets: ', allTargets.length );
-
-    // === Bind data to custom elements === //
-    let customBase = document.createElement('custom');
-		let custom = d3.select(customBase); // this is our svg replacement
+    // const targetsDict = createTargetPathsDict(data, allTargets); 
 
 
-    /////////////////////////////////////////
-    // get targets who appear more than once in the data set
-    // every appearence is a location for now (later it can be more based on visits times)
-  
+    // update description
+    descText2.text('Number of Points: '+ data.length)
+    descText3.text('Number of Targets: '+ allTargets.length)
 
-    
-    function createTargetPathsDict(dataSet, allTargets){
-      // dict: target -> data points
+    const allTargetsLength = allTargets.length
+    // read checkboxes
+    let path_checked = d3.select("#path_Checkbox").property("checked");
+    let meetingPlace_checked = d3.select("#meetingPlace_Checkbox").property("checked");
+    let lastLocation_checked = d3.select("#lastLocation_Checkbox").property("checked");
+    let keyLocation_checked  = d3.select("#keyLocation_Checkbox").property("checked");
+    let regionPoint_checked  = d3.select("#regionPoint_Checkbox").property("checked");
+    let allVisits_checked    = d3.select("#allVisits_Checkbox").property("checked");
+    let uniqueVisits_checked = d3.select("#uniqueVisits_Checkbox").property("checked");
+    let meeting_checked = d3.select("#meeting_Checkbox").property("checked");
 
-      console.log('initiating empty lists ...')
-      let targetsDict = {};
-      allTargets.forEach(id => targetsDict[id] = [] )
+    const renderTargets = allTargets // starting value
+    // state 
+    const renderData = {
+      'path_checked'         : path_checked,
+      'meetingPlace_checked' : meetingPlace_checked,
+      'lastLocation_checked' : lastLocation_checked,
+      'keyLocation_checked'  : keyLocation_checked,
+      'regionPoint_checked'  : regionPoint_checked,
+      'allVisits_checked'    : allVisits_checked,
+      'uniqueVisits_checked' : uniqueVisits_checked,
+      'meeting_checked'      : meeting_checked,
+      'meetingPlaceData'     : meetingPlaceData,
+      'lastLocationData'     : lastLocationData,
+      'keyLocationData'      : keyLocationData,
+      'regionPointData'      : regionPointData,
+      'colorByTargetId'      : colorByTargetId,
+      'allTargets'           : allTargets,
+      'targetsDict'          : targetsDict,
+      'renderTargets'        : renderTargets,
+      'allVisits'            : allVisits,
+      'uniqueVisits'         : uniqueVisits,
+      'meeting'              : meeting,
 
-      console.log('filling lists with data points...')
-      dataSet.forEach(d => targetsDict[d.targetId].push(d) ) // the whole object
-      return targetsDict
     }
 
-    // a function that takes a list of coordinates and returns the path
-    // function getPath(lineData){ }
-    var line = d3.line()
-                    .x( d => project(d).x )
-                    .y( d => project(d).y )
-                    .curve(d3.curveLinear)
-                    .context(context); 
+    // updates from the side panel
+    path_checkbox.on("change", () => { renderData.path_checked = d3.select("#path_Checkbox").property("checked"); render(); })
+    meetingPlace_checkbox.on("change", () => { renderData.meetingPlace_checked = d3.select("#meetingPlace_Checkbox").property("checked"); render(); })
+    lastLocation_checkbox.on("change", () => { renderData.lastLocation_checked = d3.select("#lastLocation_Checkbox").property("checked"); render(); })
+    keyLocation_checkbox.on("change",  () => { renderData.keyLocation_checked  = d3.select("#keyLocation_Checkbox").property("checked");  render(); })
+    regionPoint_checkbox.on("change",  () => { renderData.regionPoint_checked  = d3.select("#regionPoint_Checkbox").property("checked");  render(); })
 
-    const targetsDict = createTargetPathsDict(data, allTargets);
-    // console.log(allTargets.length)
-    // const pathData = allTargets;
+    allVisits_checkbox.on("change",  () => { renderData.allVisits_checked  = d3.select("#allVisits_Checkbox").property("checked");  render(); })
+    uniqueVisits_checkbox.on("change",  () => { renderData.uniqueVisits_checked  = d3.select("#uniqueVisits_Checkbox").property("checked");  render(); })
+    meeting_checkbox.on("change",  () => { renderData.meeting_checked  = d3.select("#meeting_Checkbox").property("checked");  render(); })
+    // SVGSetup(renderData) 
 
-    function colorByTargetId(id){
-      const index = allTargets.indexOf(id);
-      const t = index/allTargets.length;
-      return d3.interpolateSpectral(t)  //interpolatePiYG , interpolateSpectral, interpolatePuOr
-    }
+    // Target ID Options
+
+    updateTargetSelector(allTargets);
+    // targID_selector
+    //   .selectAll("option")
+    //   .data(allTargets) 
+    //   .join("option")
+    //   .text( d => d)
+    //   .attr("value", d => d)
+
+    targID_selector.on("change", function(){
+          console.log(this.value);
+          this.value!=="None"? renderData.renderTargets = [this.value]: renderData.renderTargets = allTargets;
+          render();
+          });
 
     function render() {
-
-      context.clearRect(0, 0, width, height)
-      
-      // lines
-      context.lineWidth = 0.5 * res;
-      allTargets.forEach( id => {
-        context.strokeStyle = colorByTargetId(id);
-        context.beginPath();
-        line(targetsDict[id]);
-        context.stroke();
-      })
-      
-
-      // nodes - meetingPlaceData
-      context.lineWidth    = 3 * res ;
-      // context.strokeStyle = "#fff"
-      meetingPlaceData.forEach( d => {
-        const color = colorByTargetId(d.targetId);
-        context.strokeStyle = color;
-        // const colorTransparent = color.replace(')', ', 0.30)').replace('rgb', 'rgba');        
-        // context.fillStyle = colorTransparent;
-        var p = project(d)
-        context.beginPath()
-        context.arc( p.x, p.y, 10 * res, 0, Math.PI*2)
-        // context.fill()
-        context.stroke()
-      })
-
-      // nodes - regionPoint
-      context.lineWidth   = 1 * res ;
-      context.strokeStyle = "#fff";
-      const s = 10 * res ; // rect side 
-      regionPointData.forEach( d => {
-        const color = colorByTargetId(d.targetId);       
-        context.fillStyle = color;
-        var p = project(d)
-        context.beginPath()
-        context.rect( p.x - s/2 ,  p.y - s/2 , s, s);
-        // context.arc( p.x * res, p.y * res, 6 * res, 0, Math.PI*2)
-        context.fill()
-        // context.stroke()
-      })
-
-      // nodes - lastLocation
-      context.lineWidth    = 5 * res ;
-      const r = 8 * res; // tick radius
-      lastLocationData.forEach( d => {
-        const color = colorByTargetId(d.targetId);
-        // context.strokeStyle = color;
-        // const colorTransparent = color.replace(')', ', 0.55)').replace('rgb', 'rgba');        
-        context.strokeStyle = color;
-        var p = project(d)
-        context.beginPath()
-        context.moveTo(p.x-r, p.y-r)
-        context.lineTo(p.x+r, p.y+r)
-        context.moveTo(p.x-r, p.y+r)
-        context.lineTo(p.x+r, p.y-r)
-        // context.arc( p.x * res, p.y * res, 6 * res, 0, Math.PI*2)
-        // context.fill()
-        context.stroke()
-      })
-
-      // nodes - keyLocation
-      context.lineWidth    = 1 * res ;
-      context.strokeStyle = "#fff"
-      keyLocationData.forEach( d => {
-        const color = colorByTargetId(d.targetId);
-        // context.strokeStyle = color;
-        // const colorTransparent = color.replace(')', ', 0.55)').replace('rgb', 'rgba');        
-        context.fillStyle = color;
-        var p = project(d)
-        context.beginPath()
-        context.arc( p.x , p.y, 5 * res, 0, Math.PI*2)
-        context.fill()
-        // context.stroke()
-      })
-
+      CanvasRender(renderData);
+      // SVGRender(renderData);
 
     }
 
@@ -281,75 +231,6 @@ targets_promise.then( data => {
 
 
 
-////////////////////////////
-// -------- SIDE PANEL
-////////////////////////////
-// ------------------------------------------------------------------------------------
-
-const filtersPanelDiv = d3.select(".selectors");
-
-filtersPanelDiv.append("hr").attr("class", "divider"); // divider
-
-// Investigation ID Select
-filtersPanelDiv.append("p").text("Investigation Id").attr("class", "selector-title");
-var invesID_selector   = filtersPanelDiv.append("select").attr("class", "selector");
-// Target ID Select
-filtersPanelDiv.append("p").text("Target Id").attr("class", "selector-title");
-var targID_selector    = filtersPanelDiv.append("select").attr("class", "selector");
-// Meeting Day Select
-filtersPanelDiv.append("p").text("Meeting Date").attr("class", "selector-title");
-var meetingDay_selector = filtersPanelDiv.append("select").attr("class", "selector");
-
-filtersPanelDiv.append("hr").attr("class", "divider"); // divider
-
-const descText1 = filtersPanelDiv.append("p").attr("class", "text");
-const descText2 = filtersPanelDiv.append("p").attr("class", "text");
-const descText3 = filtersPanelDiv.append("p").attr("class", "text");
-const descText4 = filtersPanelDiv.append("p").attr("class", "text");
-descText1.text("Description..");
-
-// Investigation ID Options
-invesID_selector.attr("id", "Investigation_id")
-        .selectAll("option")
-        .data(Object.keys(invesIdColors))
-        .join("option")
-        .text( d => d)
-        .attr("value", d => d)
-
-invesID_selector.on("change", function(){
-    // console.log(this.value);
-    filter_InvestigationId = this.value;
-    updateMap();
-});
-
-// Target ID Options
-targID_selector.attr("id", "Investigation_id")
-        .selectAll("option")
-        .data(Object.keys(targetIdColors))
-        .join("option")
-        .text( d => d)
-        .attr("value", d => d)
-
-targID_selector.on("change", function(){
-    console.log(this.value);
-    filter_TargetId = this.value;
-    updateMap();
-});
-
-// Meeting Day Options
-meetingDay_selector.attr("id", "Investigation_id")
-        .selectAll("option")
-        .data(meetingDays)
-        .join("option")
-        .text( d => d)
-        .attr("value", d => d)
-
-
-meetingDay_selector.on("change", function(){
-    console.log(this.value);
-    filter_meetingDay = this.value;
-    updateMap();
-});
 ////////////////////////////
 // -------- FUNCTIONS   
 ////////////////////////////
@@ -471,4 +352,68 @@ function getUniqueItems(list){
   }
   let unique = list.filter( onlyUnique ); 
   return unique;
+}
+
+function createTargetPathsDict(dataSet, allTargets){
+  // dict: target -> data points
+
+  console.log('initiating empty lists ...')
+  let targetsDict = {};
+  allTargets.forEach(id => targetsDict[id] = [] )
+
+  console.log('filling lists with data points...')
+  dataSet.forEach(d => targetsDict[d.targetId].push(d) ) // the whole object
+  return targetsDict
+}
+
+
+function colorByTargetId(id, allTargets){
+  const index = allTargets.indexOf(id);
+  const t = index/allTargets.length;
+  return d3.interpolateSpectral(t)  //interpolatePiYG , interpolateSpectral, interpolatePuOr
+}
+
+function getStringLocationFromD(d){
+  // {lat: 26.11736, lon: 50.63323} 
+  const string = ""+ d.coordinates.lon +"-"+ d.coordinates.lat;
+  return string;
+}
+
+function getLocationFromString(string){
+  const coordinatesList =  string.split("-")
+  return {'lon': parseFloat(coordinatesList[0]), 'lat': parseFloat(coordinatesList[1]) }
+ }
+
+
+ function getDatesKeyName(d){
+  // based on locationType
+  // meetingPlace -> meetingTimes
+  // regionPoint  -> visits
+  // keyLocation  -> visits
+  // lastLocation -> lastSpotted
+
+  let datesKey = 'visits';
+
+  if(d.locationType === 'meetingPlace'){datesKey = 'meetingTimes'}
+  if(d.locationType === 'lastLocation'){datesKey = 'lastSpotted'}
+
+  return datesKey;
+}
+
+function getDatesListByTarget(d){
+  const datesKey = getDatesKeyName(d);
+  let datesList = [];
+  switch(datesKey){
+      case 'lastSpotted':
+          datesList = [ d[datesKey] ] // one item
+          break;
+      case 'meetingTimes':
+          datesList = d[datesKey].map(e => e.startTime )
+      case 'visits':
+          datesList = d[datesKey].map(e => e.startTime )
+  }
+
+  return datesList;
+  // '2020-03-17T21:49:03Z'.split('T')[0].split('-') => [ '2020', '03', '17' ]
+
 }
