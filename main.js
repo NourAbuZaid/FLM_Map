@@ -13,165 +13,152 @@ const targets_promise = d3.json("json/Id/COVID19___country-BHR_20200419_0713.jso
 // "COVID19___country-RWA_20200422_1254"       
 // "COVID19___country-BHR_20200419_0713"       
 
-let renderData = []
 
 targets_promise.then( data => {
 
-    // initial filtering of the data
-    // get: allTargets, allLocations, allDates
-    console.log('filtering data by target Id ...')
-    const allTargets   = filterUniqueKeys( data, 'targetId'); // this is a list of Ids, not d objects
-    // const allLocations = filterUniqueKeys( data, 'coordinates'); // this is a list of Ids, not d objects
-    const allLocationsStrings   = data.map(d=> getStringLocationFromD(d))
-    const uniqueLocationsString = getUniqueItems(allLocationsStrings)
+    const allTargetsDB = filterUniqueKeys( data, 'targetId')
 
-    
-    const locationsDict = {}
-    uniqueLocationsString.forEach(loc => locationsDict[loc] = [] )
+    function getRenderData(selectedData){
+        console.log('filtering data by target Id ...')
+        // console.log(selectedData)
+        const allTargets   = filterUniqueKeys( selectedData, 'targetId'); // this is a for loop, 
+        const allInvestIds = filterUniqueKeys( selectedData, 'investigationId')
+        const allDates     = getUniqueItems(selectedData.map(d => getDatesListByTarget(d).map(date => date.split('T')[0] )).flat() ).sort(sortDates)
+        const allLocationsStrings   = selectedData.map(d=> getStringLocationFromD(d))
+        const uniqueLocationsString = getUniqueItems(allLocationsStrings)
 
-    // FILTER BY DAY !! 
+        // empty collectors
+        const locationsDict = {}
+        uniqueLocationsString.forEach(loc => locationsDict[loc] = [] )
+        const locationTypeDict = {'meetingPlace':[], 'lastLocation':[], 'keyLocation':[], 'regionPoint':[], }
+        let targetsDict = {};
+        allTargets.forEach(id => targetsDict[id] = [] )
 
-    // actualRenderData !! 
+        // loop through data
+        selectedData.forEach(d =>{
+          // by locationType
+          locationTypeDict[d.locationType].push(d);
+          targetsDict[d.targetId].push(d)
+          locationsDict[getStringLocationFromD(d)].push(d)
+        })
+        
+        const allVisits    = locationsByAllVisits(locationsDict)
+        const uniqueVisits = locationsByUniqueVisits(locationsDict)
+        const meeting      = locationsByPotentialMeetings(locationsDict);
 
-    // empty collectors
-    const locationTypeDict = {'meetingPlace':[], 'lastLocation':[], 'keyLocation':[], 'regionPoint':[], }
-    let targetsDict = {};
-    allTargets.forEach(id => targetsDict[id] = [] )
+        // filtering throught data based on input
+        const meetingPlaceData = locationTypeDict['meetingPlace']
+        const lastLocationData = locationTypeDict['lastLocation'] 
+        const keyLocationData  = locationTypeDict['keyLocation' ]
+        const regionPointData  = locationTypeDict['regionPoint' ] 
 
-    // loop through data
-    data.forEach(d =>{
-      // by locationType
-      locationTypeDict[d.locationType].push(d);
-      targetsDict[d.targetId].push(d)
-      locationsDict[getStringLocationFromD(d)].push(d)
-    })
-    
-    console.log(locationsDict)
+        // update description
+        descText2.text('Number of Points: '+ selectedData.length)
+        descText3.text('Number of Targets: '+ allTargets.length)
 
-    // things we can get from locationsDict
-    // 1. all locations, simple
-    // 2. all locations, rad = numberOfTargets (doesn't matter if targets repeated) [most visited effect]
-    // 3. Mutual  locations, rad = numberOf[UNIQUE]Targets (only unique targets) [mutual ones effect]
-    // 4. MEETing locations, when number of unique targets is more than one 
+        const allTargetsLength = allTargets.length
 
-    function locationsByAllVisits(locationsDict){
-      // return a list of objects {coordinates:{}, visits: 5}
-      const result = []
-      Object.keys(locationsDict).forEach(loc=>{
-        result.push({ 'coordinates': getLocationFromString(loc), 'visits': locationsDict[loc].length})
-      })
-      return result
-    }
+        
 
-    function locationsByUniqueVisits(locationsDict){
-      // return a list of objects {coordinates:{}, visits: 5}
-      const result = []
-      
-      Object.keys(locationsDict).forEach(loc=>{
-        const allDees = locationsDict[loc];
-        const uniqueList = []
-        const unique = allDees.filter( d => !uniqueList.includes(d.targetId)? uniqueList.push(d.targetId) : null )
-        // console.log(allDees)
-        // console.log(uniqueList)
-        result.push({ 'coordinates': getLocationFromString(loc), 'visits': uniqueList.length})
-      })
-      return result
-    }
-
-    function locationsByPotentialMeetings(locationsDict){
-      // return a list of objects {coordinates:{}, visits: 5}
-      const result = []
-      
-      // locationsDict locationString - [list of Dees]
-      Object.keys(locationsDict).forEach(loc=>{
-        const allDees = locationsDict[loc];
-        const uniqueList = []
-        const unique = allDees.filter( d => !uniqueList.includes(d.targetId)? uniqueList.push(d.targetId) : null )
-
-        // console.log(allDees)
-        // console.log(uniqueList)
-        // now fot this unique list we want to make a dictionary of days
-        const DaysPerTargetId = {}
-        // create empty lists
-        if(uniqueList.length > 1){
-          uniqueList.forEach( id => DaysPerTargetId[id] = [])
-          allDees.forEach(d => {
-            DaysPerTargetId[d.targetId] = getUniqueItems(getDatesListByTarget(d).map( date => date.split("T")[0]) )
-          })
-
-          // assuming we only have two items in the unique list 
-          const array1 = DaysPerTargetId[uniqueList[0]]
-          const array2 = DaysPerTargetId[uniqueList[1]]
-          const meetings = array1.filter(value => array2.includes(value))
-
-
-          if(meetings.length > 0){
-            result.push({ 'coordinates': getLocationFromString(loc), 'visits': uniqueList.length})
-          }        
+        const renderTargets = allTargets // starting value
+        // state 
+        const filteredRenderData = {
+          'meetingPlaceData'     : meetingPlaceData,
+          'lastLocationData'     : lastLocationData,
+          'keyLocationData'      : keyLocationData,
+          'regionPointData'      : regionPointData,
+          'colorByTargetId'      : colorByTargetId,
+          'allTargets'           : allTargets,
+          'targetsDict'          : targetsDict,
+          'renderTargets'        : renderTargets,
+          'allVisits'            : allVisits,
+          'uniqueVisits'         : uniqueVisits,
+          'meeting'              : meeting,
+          'allInvestIds'         : allInvestIds,
+          'allDates'             : allDates,
+          'allTargetsDB'         : allTargetsDB,
         }
-      })
-
-      return result
+        return filteredRenderData;
     }
 
-    const allVisits    = locationsByAllVisits(locationsDict)
-    const uniqueVisits = locationsByUniqueVisits(locationsDict)
-    const meeting = locationsByPotentialMeetings(locationsDict);
+    //apply filters
+    const intitialRenderData = getRenderData(data)
+    renderData = intitialRenderData;
+    filteredData = data // initially
 
+    // updating filters options
+    updateSelectorOptions(invesID_selector   , intitialRenderData.allInvestIds);
+    updateSelectorOptions(targID_selector    , intitialRenderData.allTargets);
+    updateSelectorOptions(meetingDay_selector, intitialRenderData.allDates);
+    let primaryFilter, filteredPrimarily;
+    function updateRenderData(filter){
+      // if 
+      const invest_filter = d3.select("#Investigation_id").property("value")
+      const target_filter = d3.select("#target_id").property("value")
+      const date_fiter    = d3.select("#day").property("value")
 
-    // filtering throught data based on input
-    const meetingPlaceData = locationTypeDict['meetingPlace']
-    const lastLocationData = locationTypeDict['lastLocation'] 
-    const keyLocationData  = locationTypeDict['keyLocation' ]
-    const regionPointData  = locationTypeDict['regionPoint' ] 
+      if(invest_filter === "None" && target_filter === "None" && date_fiter === "None"){
+        // if no filters are applied, return the initialRenderData -> will maybe need to break this based on InvesId
+        // save some defaul results, for investigation id's for example
+        console.log("initial values back")
+        filteredData = data;
+        filteredPrimarily = data;
+        renderData = intitialRenderData;
+        updateSelectorOptions(invesID_selector   , intitialRenderData.allInvestIds);
+        updateSelectorOptions(targID_selector    , intitialRenderData.allTargets);
+        updateSelectorOptions(meetingDay_selector, intitialRenderData.allDates);
+      } 
+      else{
+        if( target_filter !== "None" && date_fiter === "None"){
+          console.log('target filter is the primary one')
+          primaryFilter = 'target'
+          console.log('primaryFilter', primaryFilter)
+  
+        }
+        if( target_filter === "None" && date_fiter !== "None"){
+          console.log('date filter is the primary one')
+          primaryFilter = 'date'
+        }
+        // if there are filters, apply them and update renderData
+        console.log('something needs to be updated')
+        filteredData = filterData( filter, primaryFilter) 
+        renderData = getRenderData(filteredData)
+      }
+    }
 
-    console.log("Number of regionPoint :",  regionPointData.length )
-    console.log("Number of meetingPlace :", meetingPlaceData.length )
-    console.log("Number of keyLocation :",  keyLocationData.length )
-    console.log("Number of lastLocation :", lastLocationData.length )
+    function filterData(filter, primaryFilter){
+        console.log("will filter data")
+        if (filter === 'target'){
+          let dataToFilter;
+          console.log('primaryFilter', primaryFilter)
+          filter===primaryFilter? dataToFilter = data : dataToFilter = filteredPrimarily;
+          const selectedTarget = d3.select("#target_id").property("value")
+          let filteredList;
+          selectedTarget==="None"? filteredList=dataToFilter : filteredList = dataToFilter.filter(d => d.targetId === selectedTarget)
+          // update options
+          if(filter===primaryFilter) {
+            filteredPrimarily = filteredList;
+            const allDatesOptions = getUniqueItems(filteredPrimarily.map(d => getDatesListByTarget(d).map(date => date.split('T')[0] )).flat() ).sort(sortDates);
+            updateSelectorOptions(meetingDay_selector, allDatesOptions)
+          } 
+          return filteredList 
 
-
-    // const targetsDict = createTargetPathsDict(data, allTargets); 
-
-
-    // update description
-    descText2.text('Number of Points: '+ data.length)
-    descText3.text('Number of Targets: '+ allTargets.length)
-
-    const allTargetsLength = allTargets.length
-    // read checkboxes
-    let path_checked = d3.select("#path_Checkbox").property("checked");
-    let meetingPlace_checked = d3.select("#meetingPlace_Checkbox").property("checked");
-    let lastLocation_checked = d3.select("#lastLocation_Checkbox").property("checked");
-    let keyLocation_checked  = d3.select("#keyLocation_Checkbox").property("checked");
-    let regionPoint_checked  = d3.select("#regionPoint_Checkbox").property("checked");
-    let allVisits_checked    = d3.select("#allVisits_Checkbox").property("checked");
-    let uniqueVisits_checked = d3.select("#uniqueVisits_Checkbox").property("checked");
-    let meeting_checked = d3.select("#meeting_Checkbox").property("checked");
-
-    const renderTargets = allTargets // starting value
-    // state 
-    const renderData = {
-      'path_checked'         : path_checked,
-      'meetingPlace_checked' : meetingPlace_checked,
-      'lastLocation_checked' : lastLocation_checked,
-      'keyLocation_checked'  : keyLocation_checked,
-      'regionPoint_checked'  : regionPoint_checked,
-      'allVisits_checked'    : allVisits_checked,
-      'uniqueVisits_checked' : uniqueVisits_checked,
-      'meeting_checked'      : meeting_checked,
-      'meetingPlaceData'     : meetingPlaceData,
-      'lastLocationData'     : lastLocationData,
-      'keyLocationData'      : keyLocationData,
-      'regionPointData'      : regionPointData,
-      'colorByTargetId'      : colorByTargetId,
-      'allTargets'           : allTargets,
-      'targetsDict'          : targetsDict,
-      'renderTargets'        : renderTargets,
-      'allVisits'            : allVisits,
-      'uniqueVisits'         : uniqueVisits,
-      'meeting'              : meeting,
-
+        }
+        if (filter === 'date'){
+          let dataToFilter;
+          filter===primaryFilter? dataToFilter = data : dataToFilter = filteredPrimarily;
+          const selectedDate = d3.select("#day").property("value") 
+          let filteredList;
+          selectedDate==="None"? filteredList=dataToFilter : filteredList = dataToFilter.filter(d => getDatesListByTarget(d).map(date => date.split('T')[0] ).includes( selectedDate) )
+          // update options
+          if(filter===primaryFilter) {
+            filteredPrimarily = filteredList;
+            const allTargetsOptions = filterUniqueKeys( filteredPrimarily, 'targetId');
+            updateSelectorOptions(targID_selector, allTargetsOptions)
+          } 
+          return filteredList 
+        }
+        
     }
 
     // updates from the side panel
@@ -184,23 +171,20 @@ targets_promise.then( data => {
     allVisits_checkbox.on("change",  () => { renderData.allVisits_checked  = d3.select("#allVisits_Checkbox").property("checked");  render(); })
     uniqueVisits_checkbox.on("change",  () => { renderData.uniqueVisits_checked  = d3.select("#uniqueVisits_Checkbox").property("checked");  render(); })
     meeting_checkbox.on("change",  () => { renderData.meeting_checked  = d3.select("#meeting_Checkbox").property("checked");  render(); })
-    // SVGSetup(renderData) 
 
-    // Target ID Options
 
-    updateTargetSelector(allTargets);
-    // targID_selector
-    //   .selectAll("option")
-    //   .data(allTargets) 
-    //   .join("option")
-    //   .text( d => d)
-    //   .attr("value", d => d)
 
-    targID_selector.on("change", function(){
-          console.log(this.value);
-          this.value!=="None"? renderData.renderTargets = [this.value]: renderData.renderTargets = allTargets;
+
+    targID_selector.on("change", function(){ 
+          updateRenderData('target')
           render();
           });
+
+    meetingDay_selector.on("change", function(){ 
+      updateRenderData('date')
+      render();
+      });
+  
 
     function render() {
       CanvasRender(renderData);
@@ -303,16 +287,6 @@ function happenedOnThisDay(datum){
   }
 }
 
-function getPointDescription(d){
-  // return (`A point with target ID ${d.targetId} \n
-  //          and Investigation ID ${d.investigationId}.` )
-
-  return `
-        <div>
-          <span>Some HTML here</span>
-        </div>
-        `
-}
 
 function updatePointDescription(d){
   console.log(d)
@@ -391,7 +365,6 @@ function getLocationFromString(string){
   // regionPoint  -> visits
   // keyLocation  -> visits
   // lastLocation -> lastSpotted
-
   let datesKey = 'visits';
 
   if(d.locationType === 'meetingPlace'){datesKey = 'meetingTimes'}
@@ -401,6 +374,7 @@ function getLocationFromString(string){
 }
 
 function getDatesListByTarget(d){
+  // '2020-03-17T21:49:03Z'.split('T')[0].split('-') -> [ '2020', '03', '17' ]
   const datesKey = getDatesKeyName(d);
   let datesList = [];
   switch(datesKey){
@@ -412,8 +386,73 @@ function getDatesListByTarget(d){
       case 'visits':
           datesList = d[datesKey].map(e => e.startTime )
   }
-
   return datesList;
-  // '2020-03-17T21:49:03Z'.split('T')[0].split('-') => [ '2020', '03', '17' ]
-
 }
+
+function locationsByAllVisits(locationsDict){
+  // return a list of objects {coordinates:{}, visits: 5}
+  const result = []
+  Object.keys(locationsDict).forEach(loc=>{
+    result.push({ 'coordinates': getLocationFromString(loc), 'visits': locationsDict[loc].length})
+  })
+  return result
+}
+
+function locationsByUniqueVisits(locationsDict){
+  // return a list of objects {coordinates:{}, visits: 5}
+  const result = []
+  
+  Object.keys(locationsDict).forEach(loc=>{
+    const allDees = locationsDict[loc];
+    const uniqueList = []
+    const unique = allDees.filter( d => !uniqueList.includes(d.targetId)? uniqueList.push(d.targetId) : null )
+    // console.log(allDees)
+    // console.log(uniqueList)
+    result.push({ 'coordinates': getLocationFromString(loc), 'visits': uniqueList.length})
+  })
+  return result
+}
+
+function locationsByPotentialMeetings(locationsDict){
+  // return a list of objects {coordinates:{}, visits: 5}
+  const result = []
+  
+  // locationsDict locationString - [list of Dees]
+  Object.keys(locationsDict).forEach(loc=>{
+    const allDees = locationsDict[loc];
+    const uniqueList = []
+    const unique = allDees.filter( d => !uniqueList.includes(d.targetId)? uniqueList.push(d.targetId) : null )
+    const DaysPerTargetId = {}
+    // create empty lists
+    if(uniqueList.length > 1){
+      uniqueList.forEach( id => DaysPerTargetId[id] = [])
+      allDees.forEach(d => {
+        DaysPerTargetId[d.targetId] = getUniqueItems(getDatesListByTarget(d).map( date => date.split("T")[0]) )
+      })
+
+      // assuming we only have two items in the unique list 
+      const array1 = DaysPerTargetId[uniqueList[0]]
+      const array2 = DaysPerTargetId[uniqueList[1]]
+      const meetings = array1.filter(value => array2.includes(value))
+
+      if(meetings.length > 0){
+        result.push({ 'coordinates': getLocationFromString(loc), 'visits': uniqueList.length})
+      }        
+    }
+  })
+
+  return result
+}
+
+function updateSelectorOptions(selector, targets){
+  selector
+      .selectAll("option")
+      .data(["None"].concat(targets) )
+      .join("option")
+      .text( d => d)
+      .attr("value", d => d)
+}
+
+const sortDates = (a, b) => {
+  return new Date(a) - new Date(b);
+} 

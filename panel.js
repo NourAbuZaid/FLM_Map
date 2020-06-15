@@ -16,7 +16,7 @@ var invesID_selector   = filtersPanelDiv.append("select").attr("class", "selecto
 filtersPanelDiv.append("p").text("Target Id").attr("class", "selector-title");
 var targID_selector    = filtersPanelDiv.append("select")
                                         .attr("class", "selector")
-                                        .attr("id", "Investigation_id");
+                                        .attr("id", "target_id");
 // Meeting Day Select
 filtersPanelDiv.append("p").text("Date").attr("class", "selector-title");
 var meetingDay_selector = filtersPanelDiv.append("select").attr("class", "selector");
@@ -58,7 +58,7 @@ var lastLocation_checkbox = filtersPanelDiv.append("input")
                 .attr("id", 'lastLocation_Checkbox' )
                 .attr('type', 'checkbox' )
                 .attr('class', 'checkbox')
-                // .attr('checked', true)
+                .attr('checked', true)
 
 filtersPanelDiv.append('label')
                 .text( 'Last Location ')
@@ -67,7 +67,7 @@ var meetingPlace_checkbox = filtersPanelDiv.append("input")
                 .attr("id", 'meetingPlace_Checkbox' )
                 .attr('type', 'checkbox' )
                 .attr('class', 'checkbox')
-                // .attr('checked', true)
+                .attr('checked', true)
 
 filtersPanelDiv.append('label')
                 .text( 'Meeting Place ')
@@ -76,7 +76,7 @@ var keyLocation_checkbox = filtersPanelDiv.append("input")
                 .attr("id", 'keyLocation_Checkbox' )
                 .attr('type', 'checkbox' )
                 .attr('class', 'checkbox')
-                // .attr('checked', true)
+                .attr('checked', true)
 
 filtersPanelDiv.append('label')
                 .text( 'Key  Location ')
@@ -85,7 +85,7 @@ var regionPoint_checkbox = filtersPanelDiv.append("input")
                 .attr("id", 'regionPoint_Checkbox' )
                 .attr('type', 'checkbox' )
                 .attr('class', 'checkbox')
-                // .attr('checked', true)
+                .attr('checked', true)
 
 filtersPanelDiv.append('label')
                 .text( 'Region Point ')
@@ -100,7 +100,7 @@ var path_checkbox = filtersPanelDiv.append("input")
                                 .attr("id", 'path_Checkbox' )
                                 .attr('type', 'checkbox' )
                                 .attr('class', 'checkbox')
-                                // .attr('checked', true)
+                                .attr('checked', true)
 
 filtersPanelDiv.append('label')
                 .text( 'Path')
@@ -109,7 +109,7 @@ var allVisits_checkbox = filtersPanelDiv.append("input")
                                 .attr("id", 'allVisits_Checkbox' )
                                 .attr('type', 'checkbox' )
                                 .attr('class', 'checkbox')
-                                .attr('checked', true)
+                                // .attr('checked', true)
 
 filtersPanelDiv.append('label')
                 .text( 'All Visits')
@@ -118,7 +118,7 @@ var uniqueVisits_checkbox = filtersPanelDiv.append("input")
                 .attr("id", 'uniqueVisits_Checkbox' )
                 .attr('type', 'checkbox' )
                 .attr('class', 'checkbox')
-                .attr('checked', true)
+                // .attr('checked', true)
 
 filtersPanelDiv.append('label')
 .text( 'Unique Visits')
@@ -127,7 +127,7 @@ var meeting_checkbox = filtersPanelDiv.append("input")
                 .attr("id", 'meeting_Checkbox' )
                 .attr('type', 'checkbox' )
                 .attr('class', 'checkbox')
-                .attr('checked', true)
+                // .attr('checked', true)
 
 filtersPanelDiv.append('label')
 .text( 'Potential Meetings')
@@ -152,38 +152,15 @@ invesID_selector.attr("id", "Investigation_id")
         .attr("value", d => d)
 
 invesID_selector.on("change", function(){
-    // console.log(this.value);
-    filter_InvestigationId = this.value;
-    updateMap();
+    console.log(this.value);
+    
+    // filter_InvestigationId = this.value;
+    // updateMap();
 });
 
-function updateTargetSelector(targets){
-    targID_selector
-        .selectAll("option")
-        .data(["None"].concat(targets) )
-        .join("option")
-        .text( d => d)
-        .attr("value", d => d)
-
-}
-
-
-// // Target ID Options
-// targID_selector
-//         .selectAll("option")
-//         .data(Object.keys(targetIdColors))
-//         .join("option")
-//         .text( d => d)
-//         .attr("value", d => d)
-
-// targID_selector.on("change", function(){
-//     console.log(this.value);
-//     filter_TargetId = this.value;
-//     updateMap();
-// });
 
 // Meeting Day Options
-meetingDay_selector.attr("id", "Investigation_id")
+meetingDay_selector.attr("id", "day")
         .selectAll("option")
         .data( meetingDays)
         .join("option")
@@ -193,7 +170,7 @@ meetingDay_selector.attr("id", "Investigation_id")
 
 meetingDay_selector.on("change", function(){
     console.log(this.value);
-    filter_meetingDay = this.value;
-    updateMap();
+//     filter_meetingDay = this.value;
+//     updateMap();
 });
 

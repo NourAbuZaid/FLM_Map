@@ -40,20 +40,23 @@ function CanvasRender(renderData){
     const meetingPlaceData = renderData.meetingPlaceData
     const keyLocationData  = renderData.keyLocationData
     const regionPointData  = renderData.regionPointData
-    const path_checked     = renderData.path_checked;
+    
     const targetsDict      = renderData.targetsDict;
     const allVisits        = renderData.allVisits;
     const uniqueVisits        = renderData.uniqueVisits;
     const meeting        = renderData.meeting;
-    const meetingPlace_checked = renderData.meetingPlace_checked
-    const regionPoint_checked  = renderData.regionPoint_checked
-    const lastLocation_checked = renderData.lastLocation_checked
-    const keyLocation_checked  = renderData.keyLocation_checked
-    const allVisits_checked    = renderData.allVisits_checked
-    const uniqueVisits_checked    = renderData.uniqueVisits_checked
-    const meeting_checked = renderData.meeting_checked
+    const allTargetsDB   = renderData.allTargetsDB;
 
 
+    // read checkboxes
+    let path_checked = d3.select("#path_Checkbox").property("checked");
+    let meetingPlace_checked = d3.select("#meetingPlace_Checkbox").property("checked");
+    let lastLocation_checked = d3.select("#lastLocation_Checkbox").property("checked");
+    let keyLocation_checked  = d3.select("#keyLocation_Checkbox").property("checked");
+    let regionPoint_checked  = d3.select("#regionPoint_Checkbox").property("checked");
+    let allVisits_checked    = d3.select("#allVisits_Checkbox").property("checked");
+    let uniqueVisits_checked = d3.select("#uniqueVisits_Checkbox").property("checked");
+    let meeting_checked = d3.select("#meeting_Checkbox").property("checked");
   
 
 
@@ -65,7 +68,7 @@ function CanvasRender(renderData){
         .range([3, 10]);
       context.fillStyle = 'yellow';
       allVisits.forEach( d => {
-        // const color = colorByTargetId(d.targetId, allTargets);
+        // const color = colorByTargetId(d.targetId, allTargetsDB);
         // context.strokeStyle = color;
         // const colorTransparent = color.replace(')', ', 0.30)').replace('rgb', 'rgba');        
         var r = x(d.visits);
@@ -84,7 +87,7 @@ function CanvasRender(renderData){
         .range([3, 10]);
       context.fillStyle = 'green';
       uniqueVisits.forEach( d => {
-        // const color = colorByTargetId(d.targetId, allTargets);
+        // const color = colorByTargetId(d.targetId, allTargetsDB);
         // context.strokeStyle = color;
         // const colorTransparent = color.replace(')', ', 0.30)').replace('rgb', 'rgba');        
         var r = x(d.visits);
@@ -103,7 +106,7 @@ function CanvasRender(renderData){
         .range([3, 15]);
       context.fillStyle = 'red';
       meeting.forEach( d => {
-        // const color = colorByTargetId(d.targetId, allTargets);
+        // const color = colorByTargetId(d.targetId, allTargetsDB);
         // context.strokeStyle = color;
         // const colorTransparent = color.replace(')', ', 0.30)').replace('rgb', 'rgba');        
         var r = 3;
@@ -126,7 +129,7 @@ function CanvasRender(renderData){
         .range([5, 0.5]);
       context.lineWidth = x(renderTargets.length) * res;
       renderTargets.forEach( id => {
-        context.strokeStyle = colorByTargetId(id, allTargets);
+        context.strokeStyle = colorByTargetId(id, allTargetsDB);
         context.beginPath();
         line(targetsDict[id]);
         context.stroke();
@@ -141,7 +144,7 @@ function CanvasRender(renderData){
         context.lineWidth    = 3 * res ;
         // context.strokeStyle = "#fff"
         meetingPlaceData.forEach( d => {
-          const color = colorByTargetId(d.targetId, allTargets);
+          const color = colorByTargetId(d.targetId, allTargetsDB);
           context.strokeStyle = color;
           // const colorTransparent = color.replace(')', ', 0.30)').replace('rgb', 'rgba');        
           // context.fillStyle = colorTransparent;
@@ -160,7 +163,7 @@ function CanvasRender(renderData){
         context.strokeStyle = "#fff";
         const s = 10 * res ; // rect side 
         regionPointData.forEach( d => {
-        const color = colorByTargetId(d.targetId, allTargets);       
+        const color = colorByTargetId(d.targetId, allTargetsDB);       
         context.fillStyle = color;
         var p = project(d)
         context.beginPath()
@@ -176,7 +179,7 @@ function CanvasRender(renderData){
         context.lineWidth    = 5 * res ;
         const r = 8 * res; // tick radius
         lastLocationData.forEach( d => {
-        const color = colorByTargetId(d.targetId, allTargets);
+        const color = colorByTargetId(d.targetId, allTargetsDB);
         // context.strokeStyle = color;
         // const colorTransparent = color.replace(')', ', 0.55)').replace('rgb', 'rgba');        
         context.strokeStyle = color;
@@ -197,7 +200,7 @@ function CanvasRender(renderData){
         context.lineWidth    = 1 * res ;
         context.strokeStyle = "#fff"
         keyLocationData.forEach( d => {
-        const color = colorByTargetId(d.targetId, allTargets);
+        const color = colorByTargetId(d.targetId, allTargetsDB);
         // context.strokeStyle = color;
         // const colorTransparent = color.replace(')', ', 0.55)').replace('rgb', 'rgba');        
         context.fillStyle = color;
