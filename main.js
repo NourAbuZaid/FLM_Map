@@ -2,16 +2,16 @@
 // const targets_promise = d3.json("json/2020-06-03_4.json"); // data
 // const targets_promise = d3.json("json/country/BHR.json"); // data
 // const targets_promise = d3.json("json/Id/COVID19___country-SAU_20200331_145940.json"); // data
-const targets_promise = d3.json("json/Id/COVID19___country-BHR_20200419_0713.json"); // data
+const targets_promise = d3.json("json/Id/COVID19___country_IL_20200326_142406.json"); // data
 
-// "COVID19___country_IL_20200326_142406"    
-// "COVID19___country_IL_20200325_163741"       
-// "COVID19___country-SAU_20200331_145940"      
-// "COVID19___country-ARE_20200331_150758"      
-// "COVID19___country-RWA_20200422_1052"        
-// "COVID19___country-RWA_20200417_0805"       
-// "COVID19___country-RWA_20200422_1254"       
-// "COVID19___country-BHR_20200419_0713"       
+// "COVID19___country_IL_20200326_142406"
+// "COVID19___country_IL_20200325_163741"
+// "COVID19___country-SAU_20200331_145940"
+// "COVID19___country-ARE_20200331_150758"
+// "COVID19___country-RWA_20200422_1052"
+// "COVID19___country-RWA_20200417_0805"
+// "COVID19___country-RWA_20200422_1254"
+// "COVID19___country-BHR_20200419_0713"
 
 
 targets_promise.then( data => {
@@ -21,7 +21,7 @@ targets_promise.then( data => {
     function getRenderData(selectedData){
         console.log('filtering data by target Id ...')
         // console.log(selectedData)
-        const allTargets   = filterUniqueKeys( selectedData, 'targetId'); // this is a for loop, 
+        const allTargets   = filterUniqueKeys( selectedData, 'targetId'); // this is a for loop,
         const allInvestIds = filterUniqueKeys( selectedData, 'investigationId')
         const allDates     = getUniqueItems(selectedData.map(d => getDatesListByTarget(d).map(date => date.split('T')[0] )).flat() ).sort(sortDates)
         const allLocationsStrings   = selectedData.map(d=> getStringLocationFromD(d))
@@ -41,16 +41,16 @@ targets_promise.then( data => {
           targetsDict[d.targetId].push(d)
           locationsDict[getStringLocationFromD(d)].push(d)
         })
-        
+
         const allVisits    = locationsByAllVisits(locationsDict)
         const uniqueVisits = locationsByUniqueVisits(locationsDict)
         const meeting      = locationsByPotentialMeetings(locationsDict);
 
         // filtering throught data based on input
         const meetingPlaceData = locationTypeDict['meetingPlace']
-        const lastLocationData = locationTypeDict['lastLocation'] 
+        const lastLocationData = locationTypeDict['lastLocation']
         const keyLocationData  = locationTypeDict['keyLocation' ]
-        const regionPointData  = locationTypeDict['regionPoint' ] 
+        const regionPointData  = locationTypeDict['regionPoint' ]
 
         // update description
         descText2.text('Number of Points: '+ selectedData.length)
@@ -58,10 +58,10 @@ targets_promise.then( data => {
 
         const allTargetsLength = allTargets.length
 
-        
+
 
         const renderTargets = allTargets // starting value
-        // state 
+        // state
         const filteredRenderData = {
           'meetingPlaceData'     : meetingPlaceData,
           'lastLocationData'     : lastLocationData,
@@ -92,7 +92,7 @@ targets_promise.then( data => {
     updateSelectorOptions(meetingDay_selector, intitialRenderData.allDates);
     let primaryFilter, filteredPrimarily;
     function updateRenderData(filter){
-      // if 
+      // if
       const invest_filter = d3.select("#Investigation_id").property("value")
       const target_filter = d3.select("#target_id").property("value")
       const date_fiter    = d3.select("#day").property("value")
@@ -107,13 +107,13 @@ targets_promise.then( data => {
         updateSelectorOptions(invesID_selector   , intitialRenderData.allInvestIds);
         updateSelectorOptions(targID_selector    , intitialRenderData.allTargets);
         updateSelectorOptions(meetingDay_selector, intitialRenderData.allDates);
-      } 
+      }
       else{
         if( target_filter !== "None" && date_fiter === "None"){
           console.log('target filter is the primary one')
           primaryFilter = 'target'
           console.log('primaryFilter', primaryFilter)
-  
+
         }
         if( target_filter === "None" && date_fiter !== "None"){
           console.log('date filter is the primary one')
@@ -121,7 +121,7 @@ targets_promise.then( data => {
         }
         // if there are filters, apply them and update renderData
         console.log('something needs to be updated')
-        filteredData = filterData( filter, primaryFilter) 
+        filteredData = filterData( filter, primaryFilter)
         renderData = getRenderData(filteredData)
       }
     }
@@ -140,14 +140,14 @@ targets_promise.then( data => {
             filteredPrimarily = filteredList;
             const allDatesOptions = getUniqueItems(filteredPrimarily.map(d => getDatesListByTarget(d).map(date => date.split('T')[0] )).flat() ).sort(sortDates);
             updateSelectorOptions(meetingDay_selector, allDatesOptions)
-          } 
-          return filteredList 
+          }
+          return filteredList
 
         }
         if (filter === 'date'){
           let dataToFilter;
           filter===primaryFilter? dataToFilter = data : dataToFilter = filteredPrimarily;
-          const selectedDate = d3.select("#day").property("value") 
+          const selectedDate = d3.select("#day").property("value")
           let filteredList;
           selectedDate==="None"? filteredList=dataToFilter : filteredList = dataToFilter.filter(d => getDatesListByTarget(d).map(date => date.split('T')[0] ).includes( selectedDate) )
           // update options
@@ -155,10 +155,10 @@ targets_promise.then( data => {
             filteredPrimarily = filteredList;
             const allTargetsOptions = filterUniqueKeys( filteredPrimarily, 'targetId');
             updateSelectorOptions(targID_selector, allTargetsOptions)
-          } 
-          return filteredList 
+          }
+          return filteredList
         }
-        
+
     }
 
     // updates from the side panel
@@ -175,16 +175,16 @@ targets_promise.then( data => {
 
 
 
-    targID_selector.on("change", function(){ 
+    targID_selector.on("change", function(){
           updateRenderData('target')
           render();
           });
 
-    meetingDay_selector.on("change", function(){ 
+    meetingDay_selector.on("change", function(){
       updateRenderData('date')
       render();
       });
-  
+
 
     function render() {
       CanvasRender(renderData);
@@ -203,8 +203,8 @@ targets_promise.then( data => {
     // render our initial visualization
     render()
 
-    window.addEventListener("resize", ()=> { 
-      width  = calcWidth() ; 
+    window.addEventListener("resize", ()=> {
+      width  = calcWidth() ;
       height = calcHeight();
       canvas.width  = width;
       canvas.height = height;
@@ -216,7 +216,7 @@ targets_promise.then( data => {
 
 
 ////////////////////////////
-// -------- FUNCTIONS   
+// -------- FUNCTIONS
 ////////////////////////////
 
 
@@ -249,7 +249,7 @@ function colorBy(attrTyp, colorsObject){
     colorsObject[attrTyp] = 'yellow';
     return colorsObject[attrTyp]
   }
-   
+
 }
 
 function calcRadius(d){
@@ -267,7 +267,7 @@ function calcRadius(d){
 function getPointDescription(d){
   return (`A point with target ID ${d.targetId} \n
            and Investigation ID ${d.investigationId}.` )
-  
+
 }
 
 function resetMap(){
@@ -294,7 +294,7 @@ function updatePointDescription(d){
   descText2.text(`Investigation ID ${d.investigationId}`)
   descText3.text(`Location Type ${d.locationType}`)
   descText4.text(`Visits ${JSON.stringify(d.meetingTimes)}`)
-  //          `and Investigation ID ${d.investigationId}.` 
+  //          `and Investigation ID ${d.investigationId}.`
 }
 
 /////////////////////////////////
@@ -321,10 +321,10 @@ function filterUniqueKeys(data, keyName ){
 
 function getUniqueItems(list){
   // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
-  function onlyUnique(value, index, self) { 
+  function onlyUnique(value, index, self) {
       return self.indexOf(value) === index;
   }
-  let unique = list.filter( onlyUnique ); 
+  let unique = list.filter( onlyUnique );
   return unique;
 }
 
@@ -348,7 +348,7 @@ function colorByTargetId(id, allTargets){
 }
 
 function getStringLocationFromD(d){
-  // {lat: 26.11736, lon: 50.63323} 
+  // {lat: 26.11736, lon: 50.63323}
   const string = ""+ d.coordinates.lon +"-"+ d.coordinates.lat;
   return string;
 }
@@ -401,7 +401,7 @@ function locationsByAllVisits(locationsDict){
 function locationsByUniqueVisits(locationsDict){
   // return a list of objects {coordinates:{}, visits: 5}
   const result = []
-  
+
   Object.keys(locationsDict).forEach(loc=>{
     const allDees = locationsDict[loc];
     const uniqueList = []
@@ -416,7 +416,7 @@ function locationsByUniqueVisits(locationsDict){
 function locationsByPotentialMeetings(locationsDict){
   // return a list of objects {coordinates:{}, visits: 5}
   const result = []
-  
+
   // locationsDict locationString - [list of Dees]
   Object.keys(locationsDict).forEach(loc=>{
     const allDees = locationsDict[loc];
@@ -430,14 +430,14 @@ function locationsByPotentialMeetings(locationsDict){
         DaysPerTargetId[d.targetId] = getUniqueItems(getDatesListByTarget(d).map( date => date.split("T")[0]) )
       })
 
-      // assuming we only have two items in the unique list 
+      // assuming we only have two items in the unique list
       const array1 = DaysPerTargetId[uniqueList[0]]
       const array2 = DaysPerTargetId[uniqueList[1]]
       const meetings = array1.filter(value => array2.includes(value))
 
       if(meetings.length > 0){
         result.push({ 'coordinates': getLocationFromString(loc), 'visits': uniqueList.length})
-      }        
+      }
     }
   })
 
@@ -455,4 +455,4 @@ function updateSelectorOptions(selector, targets){
 
 const sortDates = (a, b) => {
   return new Date(a) - new Date(b);
-} 
+}
