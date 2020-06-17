@@ -10,11 +10,14 @@ from fastscript import *
 
 # Cell
 DEFAULT_HEADERS = [
-    "desc",
+    "id",
+    "description",
+    "location",
     "date",
     "time",
     "latitude",
-    "longitude"
+    "longitude",
+    "category"
 ]
 
 # Cell
@@ -36,14 +39,26 @@ def getDate(item: str) -> datetime:
 def from_fleming(jdata):
     headers = DEFAULT_HEADERS
     odata = []
-    for d in jdata:
+    past_locations = {}
+    for idx, d in enumerate(jdata):
         thedate = getDate(d)
+        lat = d['coordinates']['lat']
+        lon = d['coordinates']['lon']
+        locname = f"location{idx}"
+        k = f"{lat}_{lon}"
+        if past_locations.get(k) is not None:
+            locname = past_locations[k]
+        else:
+            past_locations[f"{lat}_{lon}"] = locname
         rdata = [
+            idx,
             '0d1f5b02-3178-494b-a0c7-bbc171249e3f',
+            locname,
             datetime.strftime(thedate, '%m/%d/%Y'),
             datetime.strftime(thedate, '%H:%M:%S'),
-            d['coordinates']['lat'],
-            d['coordinates']['lon'],
+            lat,
+            lon,
+            "default"
         ]
         odata.append(rdata)
 
@@ -81,5 +96,12 @@ def main(inp:Param("Input file", str),
             worksheet.write(row, col, cell)
             col += 1
         row += 1
+
+    # TODO: hacky one default category
+    category_sheet = workbook.add_worksheet('export_categories')
+    category_sheet.write(0, 0, 'category')
+    category_sheet.write(0, 1, 'description')
+    category_sheet.write(1, 0, 'default')
+    category_sheet.write(1, 1, 'default')
 
     workbook.close()
