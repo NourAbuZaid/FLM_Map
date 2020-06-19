@@ -6,7 +6,8 @@ index = {"DEFAULT_HEADERS": "00_core.ipynb",
          "dt": "00_core.ipynb",
          "getDate": "00_core.ipynb",
          "from_fleming": "00_core.ipynb",
-         "main": "00_core.ipynb",
+         "write_sheet": "00_core.ipynb",
+         "write_xlsx_from_json": "00_core.ipynb",
          "CONVERTER": "00_core.ipynb"}
 
 modules = ["core.py"]
