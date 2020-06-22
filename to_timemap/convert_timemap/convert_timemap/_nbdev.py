@@ -8,7 +8,19 @@ index = {"DEFAULT_HEADERS": "00_core.ipynb",
          "from_fleming": "00_core.ipynb",
          "write_sheet": "00_core.ipynb",
          "write_xlsx_from_json": "00_core.ipynb",
-         "CONVERTER": "00_core.ipynb"}
+         "CONVERTER": "00_core.ipynb",
+         "random_distinct_colors": "00_core.ipynb",
+         "distinct_colors": "00_core.ipynb",
+         "derive_latlon": "00_core.ipynb",
+         "COLS": "00_core.ipynb",
+         "desktop": "00_core.ipynb",
+         "targets": "00_core.ipynb",
+         "countries": "00_core.ipynb",
+         "output": "00_core.ipynb",
+         "output_xlsx": "00_core.ipynb",
+         "get_files": "00_core.ipynb",
+         "rewrite_xlsx_data": "00_core.ipynb",
+         "gen_templates": "00_core.ipynb"}
 
 modules = ["core.py"]
 
