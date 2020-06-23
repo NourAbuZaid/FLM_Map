@@ -18,9 +18,12 @@ index = {"DEFAULT_HEADERS": "00_core.ipynb",
          "countries": "00_core.ipynb",
          "output": "00_core.ipynb",
          "output_xlsx": "00_core.ipynb",
+         "flatmap": "00_core.ipynb",
          "get_files": "00_core.ipynb",
          "rewrite_xlsx_data": "00_core.ipynb",
-         "gen_templates": "00_core.ipynb"}
+         "gen_templates": "00_core.ipynb",
+         "by_size": "00_core.ipynb",
+         "matching": "00_core.ipynb"}
 
 modules = ["core.py"]
 

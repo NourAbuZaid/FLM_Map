@@ -2,7 +2,7 @@
 
 __all__ = ['DEFAULT_HEADERS', 'dt', 'getDate', 'from_fleming', 'write_sheet', 'write_xlsx_from_json', 'CONVERTER',
            'random_distinct_colors', 'distinct_colors', 'derive_latlon', 'COLS', 'desktop', 'targets', 'countries',
-           'output', 'output_xlsx', 'get_files', 'rewrite_xlsx_data', 'gen_templates']
+           'output', 'output_xlsx', 'flatmap', 'get_files', 'rewrite_xlsx_data', 'gen_templates', 'by_size', 'matching']
 
 # Cell
 import json
@@ -92,11 +92,10 @@ def write_sheet(sheet, hdrs, rows):
             col += 1
         row += 1
 
-@call_parse
-def write_xlsx_from_json(inp:Param("Input file", str),
-                 outp:Param("Output file", str)="out.xlsx",
-                 color:Param("The color of events", str)="red",
-                 tabname:Param('Name of tab', str)="export_events"):
+def write_xlsx_from_json(inp:str,
+                 outp:str="out.xlsx",
+                 color:str="red",
+                 tabname:str="export_events"):
     workbook = xlsxwriter.Workbook(outp)
     worksheet = workbook.add_worksheet(tabname)
 
@@ -172,49 +171,61 @@ output_xlsx = output/'datasheet-server'/'data'
 output_xlsx.mkdir(parents=True, exist_ok=True)
 
 # Cell
-def get_files(country, heuristic='by_size') -> List:
-    """
-    Get files according to a country.
-    TODO(lachlan): More heuristics for selecting releavnt.
-    """
-    if country == 'bhr':
-        w_folder = countries[0]
-    elif country == 'rwa1':
-        w_folder = countries[1]
-    elif country == 'is1':
-        w_folder = countries[2]
-    elif country == 'rwa2':
-        w_folder = countries[3]
-    elif country == 'sau':
-        w_folder = countries[4]
+from itertools import chain
 
-    files = []
-    ctr = list(w_folder.glob("**/*"))
-    if heuristic == 'by_size':
-        ctr.sort(key=os.path.getsize, reverse=True)
-        w_start = 0 if len(ctr) < 10 else int(len(ctr) / 2)
-        w_end = 10 if len(ctr) < 10 else int(len(ctr) / 2) + 30
+def flatmap(f, items):
+    return chain.from_iterable(map(f, items))
+
+def get_files(country=None, with_indices=None, head=10) -> List:
+    """
+    Get files with optional heuristic. Default to just picking the first 10
+    """
+    if country is None:
+        files = list(flatmap(lambda x: [t for t in x.glob("**/*") if t.is_file()], countries))
     else:
+        if country == 'bhr':
+            w_folder = countries[0]
+        elif country == 'rwa1':
+            w_folder = countries[1]
+        elif country == 'is1':
+            w_folder = countries[2]
+        elif country == 'rwa2':
+            w_folder = countries[3]
+        elif country == 'sau':
+            w_folder = countries[4]
+
+        files = [t for t in w_folder.glob("**/*") if t.is_file()]
+
+    actual_files = []
+    if with_indices is not None:
+        idxs = with_indices(list(files))
+        for idx in idxs:
+            actual_files.append(files[idx])
+
+    else:
+        # if `with_indices` not defined, take according to `head`
         w_start = 0
-        w_end = len(ctr)
+        w_end = head
 
-    for idx, x in enumerate(ctr):
-        if not x.is_file(): continue
-        if idx < w_start: continue
-        if idx >= w_end: break
-        files.append(x)
+        if head is not None:
+            for idx, x in enumerate(files):
+                if idx < w_start: continue
+                if idx >= w_end: break
+                actual_files.append(x)
+        else:
+            actual_files = files
 
-    return files
+    return actual_files
 
 # Cell
-def rewrite_xlsx_data(batch_prefix: str, heuristic='by_size') -> List:
+def rewrite_xlsx_data(batch_prefix: str, limit_country=None, extract_targets=None) -> List:
     """
     Rewrite the XLSX data in datasheet-server/data.
     Returns a list of the sheets that are created, so that they can be threaded with
     config creation.
     """
     created_sheets = []
-    w_files = get_files(batch_prefix, heuristic)
+    w_files = get_files(country=limit_country, with_indices=extract_targets)
     colors = distinct_colors(len(w_files))
     for idx, f in enumerate(w_files):
         # create a f"{f.name}.xlsx" in output using main()
@@ -319,3 +330,22 @@ def gen_templates(created_sheets, w_prefix):
     with (output/'datasheet-server'/'src'/'config.js').open('w', encoding='utf-8') as f:
         f.write(dss_config)
     print("dss_config updated.")
+
+# Cell
+import os
+from .core import get_files
+
+def by_size(data):
+    data.sort(key=os.path.getsize, reverse=True)
+    w_start = 0 if len(data) < 10 else int(len(data) / 2)
+    w_end = 10 if len(data) < 10 else int(len(data) / 2) + 40
+    return range(w_start, w_end)
+
+def matching(ids):
+    def fn(data):
+        idxs = []
+        for idx, d in enumerate(data):
+            if d.stem in ids:
+                idxs.append(idx)
+        return idxs
+    return fn
